@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import folium
+import pandas as pd
 from streamlit_folium import st_folium
 
 # Configurazione dell'app
@@ -30,11 +31,8 @@ else:
             geocode_response.raise_for_status()
             geocode_data = geocode_response.json()
 
-            # Debug: Mostra i dati ricevuti dalla Geocoding API
-            st.write("Risultati della Geocoding API:", geocode_data)
-
             if not geocode_data.get("results"):
-                st.error("Errore: Impossibile trovare le coordinate della posizione di partenza. Verifica l'indirizzo.")
+                st.error("Errore: Impossibile trovare le coordinate della posizione di partenza.")
             else:
                 coordinates = geocode_data["results"][0]["geometry"]["location"]
                 lat, lng = coordinates["lat"], coordinates["lng"]
@@ -48,31 +46,37 @@ else:
                 places_response.raise_for_status()
                 places_data = places_response.json()
 
-                # Debug: Mostra i dati ricevuti dalla Places API
-                st.write("Risultati della Places API:", places_data)
-
                 if not places_data.get("results"):
                     st.warning("Nessuna azienda trovata nel raggio selezionato.")
                 else:
                     st.success(f"Trovate {len(places_data['results'])} aziende per '{keyword}'.")
 
-                    # Mostra i risultati in una lista e su una mappa
-                    m = folium.Map(location=[lat, lng], zoom_start=12)
+                    # Creazione di un DataFrame per i risultati
+                    results = []
                     for place in places_data["results"]:
-                        place_name = place.get("name", "Senza Nome")
-                        place_address = place.get("vicinity", "Indirizzo non disponibile")
-                        place_location = place["geometry"]["location"]
+                        results.append({
+                            "Nome": place.get("name", "Senza Nome"),
+                            "Indirizzo": place.get("vicinity", "Indirizzo non disponibile"),
+                            "Latitudine": place["geometry"]["location"]["lat"],
+                            "Longitudine": place["geometry"]["location"]["lng"]
+                        })
+
+                    df = pd.DataFrame(results)
+
+                    # Mostra il DataFrame
+                    st.dataframe(df)
+
+                    # Mostra i risultati su una mappa statica
+                    m = folium.Map(location=[lat, lng], zoom_start=12)
+                    for _, row in df.iterrows():
                         folium.Marker(
-                            location=[place_location["lat"], place_location["lng"]],
-                            popup=f"{place_name}\n{place_address}",
+                            location=[row["Latitudine"], row["Longitudine"]],
+                            popup=f"{row['Nome']}\n{row['Indirizzo']}",
                             icon=folium.Icon(color="blue", icon="info-sign")
                         ).add_to(m)
-                        st.write(f"- **{place_name}**: {place_address}")
 
                     st_folium(m, width=700, height=500)
         except requests.exceptions.RequestException as e:
             st.error(f"Errore durante la richiesta API: {e}")
         except Exception as e:
             st.error(f"Errore durante l'elaborazione: {e}")
-
-
