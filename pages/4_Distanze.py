@@ -195,46 +195,26 @@ else:
             else:
                 st.error("Errore nel calcolo dei tempi di consegna.")
 
-    # Tab 10: Ottimizzazione del Carico
+    # Tab 10: Pianificazione del Carico
     with tab10:
-        st.header("Ottimizzazione del Carico")
-        addresses = st.text_area("Inserisci gli indirizzi (uno per riga)", "Via Roma, Milano\nPiazza Duomo, Firenze\nVia Napoli, Napoli", key="addresses_tab10")
+        st.header("Pianificazione del Carico")
+        carico_max = st.number_input("Capacità massima del veicolo (kg)", min_value=1, value=1000, key="tab10_carico_max")
+        ordini = st.text_area(
+            "Inserisci gli ordini (formato: Indirizzo, Peso in kg per riga)",
+            "Via Roma, Milano, 300\nPiazza Duomo, Firenze, 500\nVia Napoli, Napoli, 200",
+            key="tab10_ordini"
+        )
 
-        if st.button("Ottimizza Ordine di Consegna", key="tab10"):
-            addresses_list = addresses.split("\n")
-            if len(addresses_list) < 2:
-                st.warning("Inserisci almeno due indirizzi per l'ottimizzazione.")
+        if st.button("Pianifica Carico", key="tab10"):
+            ordini_list = [
+                line.split(", ") for line in ordini.strip().split("\n")
+            ]
+            totale_peso = sum(int(ordine[2]) for ordine in ordini_list)
+            if totale_peso > carico_max:
+                st.warning(f"Il carico totale ({totale_peso} kg) supera la capacità del veicolo ({carico_max} kg).")
             else:
-                # Calcolo della Distance Matrix per tutti i punti
-                origins = "|".join(addresses_list)
-                destinations = "|".join(addresses_list)
-
-                url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
-                       f"origins={origins}&destinations={destinations}&key={api_key}")
-                response = requests.get(url).json()
-
-                if response.get('rows'):
-                    st.write("Ordine di consegna ottimizzato (approssimativo):")
-                    visited = [addresses_list[0]]  # Partenza dal primo indirizzo
-                    to_visit = set(addresses_list[1:])
-
-                    while to_visit:
-                        current = visited[-1]
-                        distances = {}
-                        for destination in to_visit:
-                            origin_idx = addresses_list.index(current)
-                            dest_idx = addresses_list.index(destination)
-                            element = response['rows'][origin_idx]['elements'][dest_idx]
-                            if element['status'] == "OK":
-                                distances[destination] = element['distance']['value']  # Distanza in metri
-                        # Trova il più vicino
-                        next_stop = min(distances, key=distances.get)
-                        visited.append(next_stop)
-                        to_visit.remove(next_stop)
-
-                    for address in visited:
-                        st.write(f"- {address}")
-                else:
-                    st.error("Errore nel calcolo della matrice di distanze.")
+                st.success("Il carico totale rientra nei limiti!")
+                for ordine in ordini_list:
+                    st.write(f"- {ordine[0]}: {ordine[2]} kg")
 
 
