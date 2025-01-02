@@ -92,40 +92,64 @@ else:
     # Tab 9: Tempi di Consegna Multipli
     with tab9:
         st.header("Tempi di Consegna Multipli")
-        warehouse = st.text_input("Indirizzo del magazzino", "Via Roma, Milano")
-        customers = st.text_input("Indirizzi dei clienti (separati da '|')", "Piazza Duomo, Firenze|Via Napoli, Napoli")
+        warehouse = st.text_input("Indirizzo del magazzino", "Via Roma, Milano", key="warehouse_tab9")
+        customers = st.text_input("Indirizzi dei clienti (separati da '|')", "Piazza Duomo, Firenze|Via Napoli, Napoli", key="customers_tab9")
 
         if st.button("Calcola Tempi di Consegna", key="tab9"):
             url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
                    f"origins={warehouse}&destinations={customers}&key={api_key}")
             response = requests.get(url).json()
 
-            if response.get('rows'):
+            if response.get('rows') and response['rows'][0]['elements']:
                 st.write("Tempi di consegna stimati:")
                 for i, element in enumerate(response['rows'][0]['elements']):
-                    customer = customers.split('|')[i]
-                    st.write(f"- A {customer}: {element['duration']['text']}")
+                    destination = customers.split('|')[i]
+                    if element['status'] == "OK":
+                        st.write(f"- A {destination}: {element['duration']['text']}")
+                    else:
+                        st.warning(f"- A {destination}: Nessuna stima disponibile")
             else:
                 st.error("Errore nel calcolo dei tempi di consegna.")
 
     # Tab 10: Ottimizzazione del Carico
     with tab10:
         st.header("Ottimizzazione del Carico")
-        addresses = st.text_area("Inserisci gli indirizzi (uno per riga)", "Via Roma, Milano\nPiazza Duomo, Firenze\nVia Napoli, Napoli")
+        addresses = st.text_area("Inserisci gli indirizzi (uno per riga)", "Via Roma, Milano\nPiazza Duomo, Firenze\nVia Napoli, Napoli", key="addresses_tab10")
 
         if st.button("Ottimizza Ordine di Consegna", key="tab10"):
             addresses_list = addresses.split("\n")
-            origins = "|".join(addresses_list)
-            destinations = "|".join(addresses_list)
-
-            url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
-                   f"origins={origins}&destinations={destinations}&key={api_key}")
-            response = requests.get(url).json()
-
-            if response.get('rows'):
-                st.write("Ordine ottimizzato (approssimativo):")
-                for address in addresses_list:
-                    st.write(f"- {address}")
+            if len(addresses_list) < 2:
+                st.warning("Inserisci almeno due indirizzi per l'ottimizzazione.")
             else:
-                st.error("Errore nell'ottimizzazione.")
+                # Calcolo della Distance Matrix per tutti i punti
+                origins = "|".join(addresses_list)
+                destinations = "|".join(addresses_list)
+
+                url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
+                       f"origins={origins}&destinations={destinations}&key={api_key}")
+                response = requests.get(url).json()
+
+                if response.get('rows'):
+                    st.write("Ordine di consegna ottimizzato (approssimativo):")
+                    visited = [addresses_list[0]]  # Partenza dal primo indirizzo
+                    to_visit = set(addresses_list[1:])
+
+                    while to_visit:
+                        current = visited[-1]
+                        distances = {}
+                        for destination in to_visit:
+                            origin_idx = addresses_list.index(current)
+                            dest_idx = addresses_list.index(destination)
+                            element = response['rows'][origin_idx]['elements'][dest_idx]
+                            if element['status'] == "OK":
+                                distances[destination] = element['distance']['value']  # Distanza in metri
+                        # Trova il più vicino
+                        next_stop = min(distances, key=distances.get)
+                        visited.append(next_stop)
+                        to_visit.remove(next_stop)
+
+                    for address in visited:
+                        st.write(f"- {address}")
+                else:
+                    st.error("Errore nel calcolo della matrice di distanze.")
 
