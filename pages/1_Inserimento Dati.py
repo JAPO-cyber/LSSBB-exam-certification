@@ -15,7 +15,7 @@ def load_data():
     if os.path.exists(file_path):
         return pd.read_csv(file_path)
     else:
-        return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione"])
+        return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi"])
 
 # Funzione per salvare i dati
 def save_data(df):
@@ -42,6 +42,25 @@ with tabs[0]:
         genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"])
         hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"])
         soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10)
+
+        # Sezione dinamica per l'inserimento dei fermi
+        st.subheader("Fermi")
+        if "fermi" not in st.session_state:
+            st.session_state.fermi = []
+
+        # Visualizzazione campi dinamici
+        for i in range(len(st.session_state.fermi)):
+            st.session_state.fermi[i] = st.text_input(f"Fermo {i+1}", value=st.session_state.fermi[i], key=f"fermo_{i}")
+
+        # Pulsanti per aggiungere o rimuovere fermi
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Aggiungi Fermo"):
+                st.session_state.fermi.append("")
+        with col2:
+            if st.button("Rimuovi Fermo") and len(st.session_state.fermi) > 0:
+                st.session_state.fermi.pop()
+
         conferma = st.checkbox("Confermi che i dati inseriti sono corretti?")
         submit_button = st.form_submit_button("Invia")
 
@@ -56,6 +75,7 @@ with tabs[0]:
                 "Genere": genere,
                 "Hobby": ", ".join(hobby),
                 "Soddisfazione": soddisfazione,
+                "Fermi": ", ".join(st.session_state.fermi)
             }])
 
             if not os.path.exists(file_path):
@@ -66,8 +86,6 @@ with tabs[0]:
                 df_updated = pd.concat([df_existing, df_new], ignore_index=True)
                 save_data(df_updated)
                 st.success("Dati aggiunti con successo al file CSV esistente!")
-        else:
-            st.error("Devi confermare i dati per inviarli.")
 
 # Scheda 2: Modifica Dati
 with tabs[1]:
@@ -95,6 +113,7 @@ with tabs[1]:
             genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"], index=["Maschio", "Femmina", "Altro"].index(df.iloc[row_index]["Genere"]))
             hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"], default=df.iloc[row_index]["Hobby"].split(", "))
             soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10, value=int(df.iloc[row_index]["Soddisfazione"]))
+            fermi = st.text_area("Fermi (separati da virgola)", value=df.iloc[row_index]["Fermi"])
             save_button = st.form_submit_button("Salva Modifiche")
 
         # Salvataggio delle modifiche
@@ -106,9 +125,11 @@ with tabs[1]:
             df.at[row_index, "Genere"] = genere
             df.at[row_index, "Hobby"] = ", ".join(hobby)
             df.at[row_index, "Soddisfazione"] = soddisfazione
+            df.at[row_index, "Fermi"] = fermi
 
             save_data(df)
             st.success("Modifiche salvate con successo!")
             st.dataframe(df)
+
 
 
