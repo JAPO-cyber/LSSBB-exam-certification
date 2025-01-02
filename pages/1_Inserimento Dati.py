@@ -44,10 +44,27 @@ with tabs[0]:
         hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"])
         soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10)
 
-        # Nuovi campi
+        # Campo "Giorno"
         giorno = st.date_input("Giorno", value=datetime.today().date())
+        
+        # Campo "Durata"
         durata = st.number_input("Durata (minuti)", min_value=0, step=1)
-        ora_orologio = st.time_input("Ora Orologio", value=datetime.now().time())
+
+        # Campo "Ora Orologio" con HTML personalizzato
+        st.subheader("Ora Orologio")
+        ora_orologio = st.components.v1.html(
+            """
+            <input type="time" id="timeInput" value="12:00" style="font-size: 18px; padding: 5px;">
+            <script>
+                const timeInput = document.getElementById("timeInput");
+                timeInput.addEventListener("change", (event) => {
+                    const timeSelected = event.target.value;
+                    console.log("Ora selezionata:", timeSelected);
+                });
+            </script>
+            """,
+            height=50,
+        )
 
     with col2:
         st.subheader("Fermi Dinamici")
@@ -82,7 +99,7 @@ with tabs[0]:
                 "Fermi": " -- ".join(st.session_state.fermi),
                 "Giorno": giorno,
                 "Durata": durata,
-                "Ora Orologio": ora_orologio
+                "Ora Orologio": ora_orologio  # Da implementare il recupero del valore
             }])
 
             df_existing = load_data()
@@ -90,53 +107,24 @@ with tabs[0]:
             save_data(df_updated)
             st.success("Dati aggiunti con successo!")
 
-# Scheda 2: Modifica Dati
-with tabs[1]:
-    st.title("Modifica Dati")
+# Scheda 3: Scarica CSV
+with tabs[2]:
+    st.title("Scarica CSV")
 
     df = load_data()
     if df.empty:
-        st.warning("Non ci sono dati disponibili per la modifica.")
+        st.warning("Non ci sono dati disponibili per il download.")
     else:
-        st.write("Dati attualmente salvati:")
+        st.write("Anteprima del file CSV:")
         st.dataframe(df)
 
-        row_index = st.number_input("Seleziona la riga da modificare (0 per la prima)", min_value=0, max_value=len(df)-1, step=1)
-        st.write("Riga selezionata:")
-        st.write(df.iloc[row_index])
-
-        with st.form("edit_form"):
-            nome = st.text_input("Nome", df.iloc[row_index]["Nome"])
-            età = st.number_input("Età", min_value=0, step=1, value=int(df.iloc[row_index]["Età"]))
-            altezza = st.number_input("Altezza (in cm)", min_value=0.0, step=0.1, value=float(df.iloc[row_index]["Altezza (cm)"]))
-            descrizione = st.text_area("Descrizione", df.iloc[row_index]["Descrizione"])
-            genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"], index=["Maschio", "Femmina", "Altro"].index(df.iloc[row_index]["Genere"]))
-            hobby = st.text_area("Hobby (separati da --)", value=df.iloc[row_index]["Hobby"])
-            fermi = df.iloc[row_index].get("Fermi", "")
-            if pd.isna(fermi):
-                fermi = ""
-            fermi = st.text_area("Fermi (separati da --)", value=fermi)
-
-            giorno = st.date_input("Giorno", value=pd.to_datetime(df.iloc[row_index]["Giorno"], errors="coerce").date() if "Giorno" in df.columns and pd.notna(df.iloc[row_index]["Giorno"]) else datetime.today().date())
-            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(df.iloc[row_index]["Durata"]) if "Durata" in df.columns and pd.notna(df.iloc[row_index]["Durata"]) else 0)
-            ora_orologio = st.time_input("Ora Orologio", value=pd.to_datetime(df.iloc[row_index]["Ora Orologio"], errors="coerce").time() if "Ora Orologio" in df.columns and pd.notna(df.iloc[row_index]["Ora Orologio"]) else datetime.now().time())
-
-            save_button = st.form_submit_button("Salva Modifiche")
-
-        if save_button:
-            df.at[row_index, "Nome"] = nome
-            df.at[row_index, "Età"] = età
-            df.at[row_index, "Altezza (cm)"] = altezza
-            df.at[row_index, "Descrizione"] = descrizione
-            df.at[row_index, "Genere"] = genere
-            df.at[row_index, "Hobby"] = hobby
-            df.at[row_index, "Fermi"] = fermi
-            df.at[row_index, "Giorno"] = giorno
-            df.at[row_index, "Durata"] = durata
-            df.at[row_index, "Ora Orologio"] = ora_orologio
-
-            save_data(df)
-            st.success("Modifiche salvate con successo!")
-            st.dataframe(df)
+        # Scarica il file CSV
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Scarica CSV",
+            data=csv_data,
+            file_name="1_Input Dati.csv",
+            mime="text/csv"
+        )
 
 
