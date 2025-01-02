@@ -142,7 +142,11 @@ with tabs[2]:
         # Scarica il file CSV
         csv_data = df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            la
+            label="Scarica CSV",
+            data=csv_data,
+            file_name="dati.csv",
+            mime="text/csv"
+        )
 
 
 
