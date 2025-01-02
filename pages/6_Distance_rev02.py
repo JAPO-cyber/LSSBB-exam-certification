@@ -66,6 +66,7 @@ else:
                         for place in places_data["results"]:
                             place_id = place.get("place_id")
                             if place_id:
+                                # Richiedi dettagli aggiuntivi tramite Place Details API
                                 details_url = (
                                     f"https://maps.googleapis.com/maps/api/place/details/json?"
                                     f"place_id={place_id}&fields=name,formatted_address,geometry,"
@@ -76,21 +77,26 @@ else:
                                 details_response.raise_for_status()
                                 details_data = details_response.json().get("result", {})
 
-                                results.append({
-                                    "Nome": details_data.get("name", "Senza Nome"),
-                                    "Indirizzo": details_data.get("formatted_address", "Indirizzo non disponibile"),
-                                    "Latitudine": details_data.get("geometry", {}).get("location", {}).get("lat"),
-                                    "Longitudine": details_data.get("geometry", {}).get("location", {}).get("lng"),
-                                    "Telefono": details_data.get("formatted_phone_number", "Non disponibile"),
-                                    "Sito web": details_data.get("website", "Non disponibile"),
-                                    "Email": details_data.get("email", "Non disponibile"),
-                                    "Valutazione": details_data.get("rating", "Non disponibile"),
-                                    "Numero recensioni": details_data.get("user_ratings_total", "Non disponibile"),
-                                    "Tipologie": ", ".join(details_data.get("types", [])),
-                                    "Stato attività": details_data.get("business_status", "Non disponibile"),
-                                    "Prezzo": details_data.get("price_level", "Non disponibile"),
-                                    "Orari di apertura": details_data.get("opening_hours", {}).get("weekday_text", "Non disponibile")
-                                })
+                                # Controllo robusto per latitudine e longitudine
+                                lat_detail = details_data.get("geometry", {}).get("location", {}).get("lat")
+                                lng_detail = details_data.get("geometry", {}).get("location", {}).get("lng")
+
+                                if lat_detail is not None and lng_detail is not None:
+                                    results.append({
+                                        "Nome": details_data.get("name", "Senza Nome"),
+                                        "Indirizzo": details_data.get("formatted_address", "Indirizzo non disponibile"),
+                                        "Latitudine": lat_detail,
+                                        "Longitudine": lng_detail,
+                                        "Telefono": details_data.get("formatted_phone_number", "Non disponibile"),
+                                        "Sito web": details_data.get("website", "Non disponibile"),
+                                        "Email": details_data.get("email", "Non disponibile"),
+                                        "Valutazione": details_data.get("rating", "Non disponibile"),
+                                        "Numero recensioni": details_data.get("user_ratings_total", "Non disponibile"),
+                                        "Tipologie": ", ".join(details_data.get("types", [])),
+                                        "Stato attività": details_data.get("business_status", "Non disponibile"),
+                                        "Prezzo": details_data.get("price_level", "Non disponibile"),
+                                        "Orari di apertura": details_data.get("opening_hours", {}).get("weekday_text", "Non disponibile")
+                                    })
 
                         if results:
                             df = pd.DataFrame(results)
@@ -132,6 +138,3 @@ if st.session_state.df_data is not None:
 
 if st.session_state.map_data is not None:
     st_folium(st.session_state.map_data, width=700, height=500)
-
-
-
