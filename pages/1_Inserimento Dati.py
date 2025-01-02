@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime
 
 # Percorso del file CSV
 file_path = os.path.join("data", "1_Input Dati.csv")
@@ -11,7 +12,7 @@ def load_data():
         return pd.read_csv(file_path)
     else:
         st.error(f"Il file {file_path} non esiste. Assicurati che sia presente nella directory specificata.")
-        return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi"])
+        return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi", "Giorno", "Durata", "Ora Orologio"])
 
 # Funzione per salvare i dati nel file
 def save_data(df):
@@ -43,6 +44,11 @@ with tabs[0]:
         hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"])
         soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10)
 
+        # Nuovi campi
+        giorno = st.date_input("Giorno", value=datetime.today().date())
+        durata = st.number_input("Durata (minuti)", min_value=0, step=1)
+        ora_orologio = st.time_input("Ora Orologio", value=datetime.now().time())
+
     with col2:
         st.subheader("Fermi Dinamici")
         col3, col4 = st.columns(2)
@@ -73,7 +79,10 @@ with tabs[0]:
                 "Genere": genere,
                 "Hobby": " -- ".join(hobby),
                 "Soddisfazione": soddisfazione,
-                "Fermi": " -- ".join(st.session_state.fermi)
+                "Fermi": " -- ".join(st.session_state.fermi),
+                "Giorno": giorno,
+                "Durata": durata,
+                "Ora Orologio": ora_orologio
             }])
 
             df_existing = load_data()
@@ -108,6 +117,10 @@ with tabs[1]:
                 fermi = ""
             fermi = st.text_area("Fermi (separati da --)", value=fermi)
 
+            giorno = st.date_input("Giorno", value=pd.to_datetime(df.iloc[row_index]["Giorno"]).date())
+            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(df.iloc[row_index]["Durata"]))
+            ora_orologio = st.time_input("Ora Orologio", value=pd.to_datetime(df.iloc[row_index]["Ora Orologio"]).time())
+
             save_button = st.form_submit_button("Salva Modifiche")
 
         if save_button:
@@ -118,6 +131,9 @@ with tabs[1]:
             df.at[row_index, "Genere"] = genere
             df.at[row_index, "Hobby"] = hobby
             df.at[row_index, "Fermi"] = fermi
+            df.at[row_index, "Giorno"] = giorno
+            df.at[row_index, "Durata"] = durata
+            df.at[row_index, "Ora Orologio"] = ora_orologio
 
             save_data(df)
             st.success("Modifiche salvate con successo!")
