@@ -64,32 +64,18 @@ else:
                         # Creazione di un DataFrame per i risultati
                         results = []
                         for place in places_data["results"]:
-                            place_id = place.get("place_id")
-                            if place_id:
-                                details_url = (
-                                    f"https://maps.googleapis.com/maps/api/place/details/json?"
-                                    f"place_id={place_id}&fields=name,formatted_address,geometry,"
-                                    f"formatted_phone_number,website,email,rating,user_ratings_total,"
-                                    f"types,business_status,opening_hours,price_level&key={api_key}"
-                                )
-                                details_response = requests.get(details_url)
-                                details_response.raise_for_status()
-                                details_data = details_response.json().get("result", {})
+                            place_name = place.get("name", "Senza Nome")
+                            place_address = place.get("vicinity", "Indirizzo non disponibile")
+                            place_location = place.get("geometry", {}).get("location", {})
+                            lat_detail = place_location.get("lat")
+                            lng_detail = place_location.get("lng")
 
+                            if lat_detail is not None and lng_detail is not None:
                                 results.append({
-                                    "Nome": details_data.get("name", "Senza Nome"),
-                                    "Indirizzo": details_data.get("formatted_address", "Indirizzo non disponibile"),
-                                    "Latitudine": details_data.get("geometry", {}).get("location", {}).get("lat"),
-                                    "Longitudine": details_data.get("geometry", {}).get("location", {}).get("lng"),
-                                    "Valutazione": details_data.get("rating", "Non disponibile"),
-                                    "Numero recensioni": details_data.get("user_ratings_total", "Non disponibile"),
-                                    "Tipologie": ", ".join(details_data.get("types", [])),
-                                    "Stato attività": details_data.get("business_status", "Non disponibile"),
-                                    "Telefono": details_data.get("formatted_phone_number", "Non disponibile"),
-                                    "Sito web": details_data.get("website", "Non disponibile"),
-                                    "Email": details_data.get("email", "Non disponibile"),
-                                    "Prezzo": details_data.get("price_level", "Non disponibile"),
-                                    "Orari di apertura": details_data.get("opening_hours", {}).get("weekday_text", "Non disponibile")
+                                    "Nome": place_name,
+                                    "Indirizzo": place_address,
+                                    "Latitudine": lat_detail,
+                                    "Longitudine": lng_detail
                                 })
 
                         if results:
@@ -103,18 +89,7 @@ else:
                             for _, row in df.iterrows():
                                 folium.Marker(
                                     location=[row["Latitudine"], row["Longitudine"]],
-                                    popup=(
-                                        f"{row['Nome']}\n{row['Indirizzo']}\n"
-                                        f"Telefono: {row['Telefono']}\n"
-                                        f"Sito web: {row['Sito web']}\n"
-                                        f"Email: {row['Email']}\n"
-                                        f"Valutazione: {row['Valutazione']}\n"
-                                        f"Numero recensioni: {row['Numero recensioni']}\n"
-                                        f"Tipologie: {row['Tipologie']}\n"
-                                        f"Stato attività: {row['Stato attività']}\n"
-                                        f"Prezzo: {row['Prezzo']}\n"
-                                        f"Orari di apertura: {row['Orari di apertura']}"
-                                    ),
+                                    popup=f"{row['Nome']}\n{row['Indirizzo']}",
                                     icon=folium.Icon(color="blue", icon="info-sign")
                                 ).add_to(m)
 
@@ -134,4 +109,5 @@ if st.session_state.df_data is not None:
 
 if st.session_state.map_data is not None:
     st_folium(st.session_state.map_data, width=700, height=500)
+
 
