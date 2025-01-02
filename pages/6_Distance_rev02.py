@@ -60,11 +60,23 @@ else:
                     # Creazione di un DataFrame per i risultati
                     results = []
                     for place in places_data["results"]:
+                        # Dettagli aggiuntivi tramite Place Details API
+                        place_id = place.get("place_id")
+                        details_url = (
+                            f"https://maps.googleapis.com/maps/api/place/details/json?"
+                            f"place_id={place_id}&fields=name,formatted_address,geometry,formatted_phone_number,email&key={api_key}"
+                        )
+                        details_response = requests.get(details_url)
+                        details_response.raise_for_status()
+                        details_data = details_response.json().get("result", {})
+
                         results.append({
-                            "Nome": place.get("name", "Senza Nome"),
-                            "Indirizzo": place.get("vicinity", "Indirizzo non disponibile"),
-                            "Latitudine": place["geometry"]["location"]["lat"],
-                            "Longitudine": place["geometry"]["location"]["lng"]
+                            "Nome": details_data.get("name", "Senza Nome"),
+                            "Indirizzo": details_data.get("formatted_address", "Indirizzo non disponibile"),
+                            "Telefono": details_data.get("formatted_phone_number", "Non disponibile"),
+                            "Email": details_data.get("email", "Non disponibile"),
+                            "Latitudine": details_data.get("geometry", {}).get("location", {}).get("lat", ""),
+                            "Longitudine": details_data.get("geometry", {}).get("location", {}).get("lng", "")
                         })
 
                     df = pd.DataFrame(results)
@@ -77,7 +89,7 @@ else:
                     for _, row in df.iterrows():
                         folium.Marker(
                             location=[row["Latitudine"], row["Longitudine"]],
-                            popup=f"{row['Nome']}\n{row['Indirizzo']}",
+                            popup=f"{row['Nome']}\n{row['Indirizzo']}\nTelefono: {row['Telefono']}\nEmail: {row['Email']}",
                             icon=folium.Icon(color="blue", icon="info-sign")
                         ).add_to(m)
 
