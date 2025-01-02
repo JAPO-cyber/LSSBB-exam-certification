@@ -46,30 +46,16 @@ with tabs[0]:
         giorno_html = f"""
         <label for="giorno" style="font-size: 16px; color: white;">Seleziona Giorno:</label>
         <input type="date" id="giorno" value="{datetime.today().strftime('%Y-%m-%d')}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
-        <script>
-            const dateInput = document.getElementById('giorno');
-            dateInput.addEventListener('change', (event) => {{
-                const selectedDate = event.target.value.split('-').reverse().join('/');
-                console.log("Data selezionata:", selectedDate);
-            }});
-        </script>
         """
-        giorno = st.components.v1.html(giorno_html, height=70)
+        st.components.v1.html(giorno_html, height=70)
 
         # Campo "Ora Orologio" con HTML personalizzato
         st.subheader("Ora Orologio")
         ora_orologio_html = f"""
         <label for="timeInput" style="font-size: 16px; color: white;">Seleziona Ora:</label>
         <input type="time" id="timeInput" value="{datetime.now().strftime('%H:%M')}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
-        <script>
-            const timeInput = document.getElementById('timeInput');
-            timeInput.addEventListener('change', (event) => {{
-                const selectedTime = event.target.value;
-                console.log("Ora selezionata:", selectedTime);
-            }});
-        </script>
         """
-        ora_orologio = st.components.v1.html(ora_orologio_html, height=70)
+        st.components.v1.html(ora_orologio_html, height=70)
 
         durata = st.number_input("Durata (minuti)", min_value=0, step=1)
 
@@ -98,7 +84,24 @@ with tabs[0]:
 
     if submit_button:
         if conferma:
-            st.success("Dati inviati con successo!")
+            df_new = pd.DataFrame([{
+                "Nome": nome,
+                "Età": età,
+                "Altezza (cm)": altezza,
+                "Descrizione": descrizione,
+                "Genere": genere,
+                "Hobby": " -- ".join(hobby),
+                "Soddisfazione": soddisfazione,
+                "Fermi": " -- ".join(st.session_state.fermi),
+                "Giorno": datetime.today().strftime('%d/%m/%Y'),
+                "Durata": durata,
+                "Ora Orologio": datetime.now().strftime('%H:%M')
+            }])
+
+            df_existing = load_data()
+            df_updated = pd.concat([df_existing, df_new], ignore_index=True)
+            save_data(df_updated)
+            st.success("Dati aggiunti con successo!")
 
 # Scheda 2: Modifica Dati
 with tabs[1]:
@@ -125,28 +128,55 @@ with tabs[1]:
             hobby = st.text_area("Hobby (separati da --)", value=df.iloc[row_index]["Hobby"])
             fermi = st.text_area("Fermi (separati da --)", value=df.iloc[row_index]["Fermi"] if "Fermi" in df.columns else "")
 
-            # Campo "Giorno" (modificabile)
+            # Campo "Giorno"
             giorno_val = pd.to_datetime(df.iloc[row_index]["Giorno"], errors="coerce")
             if pd.isna(giorno_val):
                 giorno_val = datetime.today().date()
-            giorno_html = f"""
-            <label for="giornoMod" style="font-size: 16px; color: white;">Modifica Giorno:</label>
-            <input type="date" id="giornoMod" value="{giorno_val.strftime('%Y-%m-%d')}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
-            """
-            st.components.v1.html(giorno_html, height=70)
+            giorno = st.date_input("Giorno", value=giorno_val)
 
-            # Campo "Ora Orologio" (modificabile)
+            # Campo "Ora Orologio"
             ora_corrente = df.iloc[row_index]["Ora Orologio"] if "Ora Orologio" in df.columns else "12:00"
-            ora_orologio_html = f"""
-            <label for="timeInputMod" style="font-size: 16px; color: white;">Modifica Ora:</label>
-            <input type="time" id="timeInputMod" value="{ora_corrente}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
-            """
-            st.components.v1.html(ora_orologio_html, height=70)
+            ora_orologio = st.text_input("Ora Orologio (HH:MM)", value=ora_corrente)
+
+            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(df.iloc[row_index]["Durata"]) if "Durata" in df.columns else 0)
 
             save_button = st.form_submit_button("Salva Modifiche")
 
         if save_button:
+            df.at[row_index, "Nome"] = nome
+            df.at[row_index, "Età"] = età
+            df.at[row_index, "Altezza (cm)"] = altezza
+            df.at[row_index, "Descrizione"] = descrizione
+            df.at[row_index, "Genere"] = genere
+            df.at[row_index, "Hobby"] = hobby
+            df.at[row_index, "Fermi"] = fermi
+            df.at[row_index, "Giorno"] = giorno.strftime('%d/%m/%Y')
+            df.at[row_index, "Durata"] = durata
+            df.at[row_index, "Ora Orologio"] = ora_orologio
+
+            save_data(df)
             st.success("Modifiche salvate con successo!")
+
+# Scheda 3: Scarica CSV
+with tabs[2]:
+    st.title("Scarica CSV")
+
+    df = load_data()
+    if df.empty:
+        st.warning("Non ci sono dati disponibili per il download.")
+    else:
+        st.write("Anteprima del file CSV:")
+        st.dataframe(df)
+
+        # Scarica il file CSV
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Scarica CSV",
+            data=csv_data,
+            file_name="1_Input Dati.csv",
+            mime="text/csv"
+        )
+
 
 
 
