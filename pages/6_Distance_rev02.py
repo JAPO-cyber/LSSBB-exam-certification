@@ -16,13 +16,13 @@ st.sidebar.header("Configurazione API")
 api_key = st.sidebar.text_input("Inserisci la tua API Key", type="password")
 
 # Tab 11: Ricerca Aziende di Elettricisti
-st.header("Tab 11: Ricerca Aziende di Elettricisti")
+st.header("Scheda 11: Ricerca Aziende")
 if not api_key:
     st.warning("Inserisci la tua API Key per utilizzare la funzionalità.")
 else:
     location = st.text_input("Inserisci la posizione di partenza (es. Via Roma, Milano)", "Via Roma, Milano")
     radius = st.slider("Seleziona il raggio di ricerca (in km)", min_value=1, max_value=100, value=10)
-    keyword = "elettricisti"
+    keyword = st.text_input("Inserisci il tipo di attività da cercare", "elettricisti")
 
     if st.button("Cerca Aziende", key="search_electricians"):
         try:
@@ -50,7 +50,7 @@ else:
                 if not places_data.get("results"):
                     st.warning("Nessuna azienda trovata nel raggio selezionato.")
                 else:
-                    st.success(f"Trovate {len(places_data['results'])} aziende di elettricisti.")
+                    st.success(f"Trovate {len(places_data['results'])} aziende per '{keyword}'.")
 
                     # Mostra i risultati in una lista e su una mappa
                     m = folium.Map(location=[lat, lng], zoom_start=12)
@@ -70,3 +70,4 @@ else:
             st.error(f"Errore durante la richiesta API: {e}")
         except Exception as e:
             st.error(f"Errore durante l'elaborazione: {e}")
+
