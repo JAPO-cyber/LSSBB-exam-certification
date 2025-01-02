@@ -37,22 +37,11 @@ with tabs[0]:
     if "fermi" not in st.session_state:
         st.session_state.fermi = []
 
-    # Pulsanti per aggiungere o rimuovere fermi
+    # Dividi la pagina in due colonne
     col1, col2 = st.columns(2)
+
     with col1:
-        if st.button("Aggiungi Fermo"):
-            st.session_state.fermi.append("")
-    with col2:
-        if st.button("Rimuovi Fermo") and len(st.session_state.fermi) > 0:
-            st.session_state.fermi.pop()
-
-    # Visualizzazione campi dinamici
-    st.subheader("Fermi")
-    for i in range(len(st.session_state.fermi)):
-        st.session_state.fermi[i] = st.text_input(f"Fermo {i+1}", value=st.session_state.fermi[i], key=f"fermo_{i}")
-
-    # Form per l'inserimento di dati
-    with st.form("complete_form"):
+        st.subheader("Dati Tradizionali")
         nome = st.text_input("Nome", placeholder="Inserisci il tuo nome")
         età = st.number_input("Età", min_value=0, step=1)
         altezza = st.number_input("Altezza (in cm)", min_value=0.0, step=0.1)
@@ -60,6 +49,24 @@ with tabs[0]:
         genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"])
         hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"])
         soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10)
+
+    with col2:
+        st.subheader("Fermi Dinamici")
+        # Pulsanti per aggiungere o rimuovere fermi
+        add_button = st.button("Aggiungi Fermo")
+        remove_button = st.button("Rimuovi Fermo")
+
+        if add_button:
+            st.session_state.fermi.append("")
+        if remove_button and len(st.session_state.fermi) > 0:
+            st.session_state.fermi.pop()
+
+        # Visualizzazione campi dinamici
+        for i in range(len(st.session_state.fermi)):
+            st.session_state.fermi[i] = st.text_input(f"Fermo {i+1}", value=st.session_state.fermi[i], key=f"fermo_{i}")
+
+    # Form per confermare l'invio
+    with st.form("complete_form"):
         conferma = st.checkbox("Confermi che i dati inseriti sono corretti?")
         submit_button = st.form_submit_button("Invia")
 
