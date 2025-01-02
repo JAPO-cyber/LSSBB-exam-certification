@@ -48,12 +48,6 @@ with st.form("complete_form"):
     # Checkbox
     conferma = st.checkbox("Confermi che i dati inseriti sono corretti?")
 
-    # Radio buttons
-    priorità = st.radio("Qual è la tua priorità?", ["Lavoro", "Famiglia", "Hobby", "Salute"])
-
-    # Bottone per inviare i dati
-    submit_button = st.form_submit_button("Invia Dati")
-
 # Elaborazione dati al click del pulsante
 if submit_button:
     if conferma:
