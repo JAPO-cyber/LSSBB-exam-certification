@@ -14,6 +14,12 @@ st.title("Route Optimization con OR-Tools e Google Maps API")
 st.sidebar.header("Configurazione API")
 api_key = st.sidebar.text_input("Inserisci la tua API Key", type="password")
 
+# Variabile di stato per la mappa e i risultati
+if "map_data" not in st.session_state:
+    st.session_state.map_data = None
+if "df_data" not in st.session_state:
+    st.session_state.df_data = None
+
 # Tab 11: Ricerca Aziende di Elettricisti
 st.header("Scheda 11: Ricerca Aziende")
 if not api_key:
@@ -63,10 +69,10 @@ else:
 
                     df = pd.DataFrame(results)
 
-                    # Mostra il DataFrame
-                    st.dataframe(df)
+                    # Salva i dati nel session state
+                    st.session_state.df_data = df
 
-                    # Mostra i risultati su una mappa statica
+                    # Crea la mappa
                     m = folium.Map(location=[lat, lng], zoom_start=12)
                     for _, row in df.iterrows():
                         folium.Marker(
@@ -75,8 +81,18 @@ else:
                             icon=folium.Icon(color="blue", icon="info-sign")
                         ).add_to(m)
 
-                    st_folium(m, width=700, height=500)
+                    # Salva la mappa nel session state
+                    st.session_state.map_data = m
+
         except requests.exceptions.RequestException as e:
             st.error(f"Errore durante la richiesta API: {e}")
         except Exception as e:
             st.error(f"Errore durante l'elaborazione: {e}")
+
+# Mostra i risultati salvati nel session state
+if st.session_state.df_data is not None:
+    st.dataframe(st.session_state.df_data)
+
+if st.session_state.map_data is not None:
+    st_folium(st.session_state.map_data, width=700, height=500)
+
