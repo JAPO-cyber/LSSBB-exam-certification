@@ -117,9 +117,9 @@ with tabs[1]:
                 fermi = ""
             fermi = st.text_area("Fermi (separati da --)", value=fermi)
 
-            giorno = st.date_input("Giorno", value=pd.to_datetime(df.iloc[row_index]["Giorno"]).date())
-            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(df.iloc[row_index]["Durata"]))
-            ora_orologio = st.time_input("Ora Orologio", value=pd.to_datetime(df.iloc[row_index]["Ora Orologio"]).time())
+            giorno = st.date_input("Giorno", value=pd.to_datetime(df.iloc[row_index]["Giorno"], errors="coerce").date() if "Giorno" in df.columns and pd.notna(df.iloc[row_index]["Giorno"]) else datetime.today().date())
+            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(df.iloc[row_index]["Durata"]) if "Durata" in df.columns and pd.notna(df.iloc[row_index]["Durata"]) else 0)
+            ora_orologio = st.time_input("Ora Orologio", value=pd.to_datetime(df.iloc[row_index]["Ora Orologio"], errors="coerce").time() if "Ora Orologio" in df.columns and pd.notna(df.iloc[row_index]["Ora Orologio"]) else datetime.now().time())
 
             save_button = st.form_submit_button("Salva Modifiche")
 
@@ -138,25 +138,5 @@ with tabs[1]:
             save_data(df)
             st.success("Modifiche salvate con successo!")
             st.dataframe(df)
-
-# Scheda 3: Scarica CSV
-with tabs[2]:
-    st.title("Scarica CSV")
-
-    df = load_data()
-    if df.empty:
-        st.warning("Non ci sono dati disponibili per il download.")
-    else:
-        st.write("Anteprima del file CSV:")
-        st.dataframe(df)
-
-        # Scarica il file CSV
-        csv_data = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Scarica CSV",
-            data=csv_data,
-            file_name="1_Input Dati.csv",
-            mime="text/csv"
-        )
 
 
