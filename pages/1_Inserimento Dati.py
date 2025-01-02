@@ -138,7 +138,11 @@ with tabs[1]:
             ora_corrente = df.iloc[row_index]["Ora Orologio"] if "Ora Orologio" in df.columns else "12:00"
             ora_orologio = st.text_input("Ora Orologio (HH:MM)", value=ora_corrente)
 
-            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(df.iloc[row_index]["Durata"]) if "Durata" in df.columns else 0)
+            # Gestione di "Durata"
+            durata_val = df.iloc[row_index]["Durata"] if "Durata" in df.columns else 0
+            if pd.isna(durata_val):
+                durata_val = 0
+            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(durata_val))
 
             save_button = st.form_submit_button("Salva Modifiche")
 
