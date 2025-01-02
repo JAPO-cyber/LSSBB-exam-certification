@@ -124,7 +124,12 @@ with tabs[1]:
             hobby = st.text_area("Hobby (separati da --)", value=df.iloc[row_index]["Hobby"])
             fermi = st.text_area("Fermi (separati da --)", value=df.iloc[row_index]["Fermi"] if "Fermi" in df.columns else "")
 
-            giorno = st.date_input("Giorno", value=pd.to_datetime(df.iloc[row_index]["Giorno"], errors="coerce").date() if "Giorno" in df.columns else datetime.today().date())
+            # Gestione di "Giorno"
+            giorno_val = pd.to_datetime(df.iloc[row_index]["Giorno"], errors="coerce")
+            if pd.isna(giorno_val):
+                giorno_val = datetime.today().date()  # Predefinita alla data odierna
+            giorno = st.date_input("Giorno", value=giorno_val)
+
             durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(df.iloc[row_index]["Durata"]) if "Durata" in df.columns else 0)
 
             ora_corrente = df.iloc[row_index]["Ora Orologio"] if "Ora Orologio" in df.columns else "12:00"
@@ -171,5 +176,6 @@ with tabs[2]:
             file_name="1_Input Dati.csv",
             mime="text/csv"
         )
+
 
 
