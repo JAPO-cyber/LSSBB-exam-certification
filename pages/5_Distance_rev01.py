@@ -139,11 +139,12 @@ else:
 
                                 # Aggiunta dei marker per le destinazioni
                                 for idx, leg in enumerate(route_info['legs']):
-                                    folium.Marker(
-                                        location=[leg['end_location']['lat'], leg['end_location']['lng']],
-                                        popup=f"Fermata {idx + 1}: {addresses_list[idx + 1]}",
-                                        icon=folium.Icon(color="green" if idx == len(route_info['legs']) - 1 else "red")
-                                    ).add_to(m)
+                                    if idx + 1 < len(addresses_list):
+                                        folium.Marker(
+                                            location=[leg['end_location']['lat'], leg['end_location']['lng']],
+                                            popup=f"Fermata {idx + 1}: {addresses_list[idx + 1]}",
+                                            icon=folium.Icon(color="green" if idx == len(route_info['legs']) - 1 else "red")
+                                        ).add_to(m)
 
                                 st_folium(m, width=700, height=500)
                             else:
@@ -159,4 +160,5 @@ else:
                 st.error(f"Errore durante la richiesta API: {e}")
             except Exception as e:
                 st.error(f"Errore durante l'elaborazione: {e}")
+
 
