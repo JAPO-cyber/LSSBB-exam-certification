@@ -56,6 +56,21 @@ with tabs[0]:
         """
         giorno = st.components.v1.html(giorno_html, height=70)
 
+        # Campo "Ora Orologio" con HTML personalizzato
+        st.subheader("Ora Orologio")
+        ora_orologio_html = f"""
+        <label for="timeInput" style="font-size: 16px; color: white;">Seleziona Ora:</label>
+        <input type="time" id="timeInput" value="{datetime.now().strftime('%H:%M')}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
+        <script>
+            const timeInput = document.getElementById('timeInput');
+            timeInput.addEventListener('change', (event) => {{
+                const selectedTime = event.target.value;
+                console.log("Ora selezionata:", selectedTime);
+            }});
+        </script>
+        """
+        ora_orologio = st.components.v1.html(ora_orologio_html, height=70)
+
         durata = st.number_input("Durata (minuti)", min_value=0, step=1)
 
     with col2:
@@ -105,7 +120,6 @@ with tabs[2]:
             file_name="1_Input Dati.csv",
             mime="text/csv"
         )
-
 
 
 
