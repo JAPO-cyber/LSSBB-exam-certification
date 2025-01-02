@@ -48,89 +48,84 @@ else:
             else:
                 st.error("Errore nel calcolo della distanza.")
 
-    # Tab 2: Ottimizzazione percorsi
-    with tab2:
-        st.header("Ottimizzazione Percorsi")
-        origin = st.text_input("Punto di Partenza", "Via Venezia, Padova")
-        destination = st.text_input("Destinazione Finale", "Via Napoli, Napoli")
-        waypoints = st.text_input("Fermate Intermedie (separate da '|')", "Via Milano, Torino|Via Roma, Bologna")
+    # Tab 7: Multi-Consegne
+    with tab7:
+        st.header("Pianificazione Multi-Consegne")
+        origins = st.text_input("Indirizzi di partenza (separati da '|')", "Via Roma, Milano|Via Torino, Torino")
+        destinations = st.text_input("Indirizzi di destinazione (separati da '|')", "Piazza Duomo, Firenze|Via Napoli, Napoli")
 
-        if st.button("Calcola Percorso", key="tab2"):
-            url = (f"https://maps.googleapis.com/maps/api/directions/json?"
-                   f"origin={origin}&destination={destination}&waypoints={waypoints}&key={api_key}")
+        if st.button("Calcola Distanze", key="tab7"):
+            url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
+                   f"origins={origins}&destinations={destinations}&key={api_key}")
             response = requests.get(url).json()
 
-            if response.get('routes'):
-                st.write("Percorso ottimale:")
-                for leg in response['routes'][0]['legs']:
-                    st.write(f"- Da {leg['start_address']} a {leg['end_address']}: {leg['distance']['text']}")
+            if response.get('rows'):
+                st.write("Distanze calcolate:")
+                for i, row in enumerate(response['rows']):
+                    for j, element in enumerate(row['elements']):
+                        origin = origins.split('|')[i]
+                        destination = destinations.split('|')[j]
+                        st.write(f"- Da {origin} a {destination}: {element['distance']['text']}, {element['duration']['text']}")
             else:
-                st.error("Errore nel calcolo del percorso.")
+                st.error("Errore nel calcolo delle distanze.")
 
-    # Tab 3: Monitoraggio in tempo reale
-    with tab3:
-        st.header("Monitoraggio in Tempo Reale")
-        locations = [(45.464211, 9.191383), (45.465422, 9.188553), (45.466533, 9.185723)]
+    # Tab 8: Monitoraggio Parco Veicoli
+    with tab8:
+        st.header("Monitoraggio Parco Veicoli")
+        vehicle_locations = [
+            {"name": "Camion 1", "lat": 45.464211, "lon": 9.191383},
+            {"name": "Camion 2", "lat": 45.465422, "lon": 9.188553},
+            {"name": "Camion 3", "lat": 45.466533, "lon": 9.185723},
+        ]
 
         # Creazione mappa con Folium
-        m = folium.Map(location=locations[0], zoom_start=15)
-        for loc in locations:
-            folium.Marker(location=loc, popup=f"Lat: {loc[0]}, Lon: {loc[1]}").add_to(m)
+        m = folium.Map(location=[45.464211, 9.191383], zoom_start=13)
+        for vehicle in vehicle_locations:
+            folium.Marker(
+                location=[vehicle["lat"], vehicle["lon"]],
+                popup=f"{vehicle['name']}",
+                icon=folium.Icon(color="blue")
+            ).add_to(m)
 
         st_folium(m, width=700, height=500)
 
-    # Tab 4: Luoghi di ritiro vicini
-    with tab4:
-        st.header("Luoghi di Ritiro Vicini")
-        location = st.text_input("Coordinate (latitudine, longitudine)", "45.464211,9.191383")
-        radius = st.slider("Raggio di ricerca (metri)", 100, 5000, 1000)
-        type_place = st.selectbox("Tipo di luogo", ["store", "restaurant", "gas_station"])
+    # Tab 9: Tempi di Consegna Multipli
+    with tab9:
+        st.header("Tempi di Consegna Multipli")
+        warehouse = st.text_input("Indirizzo del magazzino", "Via Roma, Milano")
+        customers = st.text_input("Indirizzi dei clienti (separati da '|')", "Piazza Duomo, Firenze|Via Napoli, Napoli")
 
-        if st.button("Cerca Luoghi", key="tab4"):
-            url = (f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
-                   f"location={location}&radius={radius}&type={type_place}&key={api_key}")
+        if st.button("Calcola Tempi di Consegna", key="tab9"):
+            url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
+                   f"origins={warehouse}&destinations={customers}&key={api_key}")
             response = requests.get(url).json()
 
-            if response.get('results'):
-                st.write("Luoghi trovati:")
-                for place in response['results']:
-                    name = place['name']
-                    address = place.get('vicinity', 'Indirizzo non disponibile')
-                    st.write(f"- {name}: {address}")
+            if response.get('rows'):
+                st.write("Tempi di consegna stimati:")
+                for i, element in enumerate(response['rows'][0]['elements']):
+                    customer = customers.split('|')[i]
+                    st.write(f"- A {customer}: {element['duration']['text']}")
             else:
-                st.error("Nessun luogo trovato.")
+                st.error("Errore nel calcolo dei tempi di consegna.")
 
-    # Tab 5: Geocoding indirizzi
-    with tab5:
-        st.header("Geocoding Indirizzi")
-        address = st.text_input("Inserisci un indirizzo", "Piazza Duomo, Milano")
+    # Tab 10: Ottimizzazione del Carico
+    with tab10:
+        st.header("Ottimizzazione del Carico")
+        addresses = st.text_area("Inserisci gli indirizzi (uno per riga)", "Via Roma, Milano\nPiazza Duomo, Firenze\nVia Napoli, Napoli")
 
-        if st.button("Ottieni Coordinate", key="tab5"):
-            url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
+        if st.button("Ottimizza Ordine di Consegna", key="tab10"):
+            addresses_list = addresses.split("\n")
+            origins = "|".join(addresses_list)
+            destinations = "|".join(addresses_list)
+
+            url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
+                   f"origins={origins}&destinations={destinations}&key={api_key}")
             response = requests.get(url).json()
 
-            if response.get('results'):
-                location = response['results'][0]['geometry']['location']
-                st.success(f"Coordinate: Latitudine {location['lat']}, Longitudine {location['lng']}")
+            if response.get('rows'):
+                st.write("Ordine ottimizzato (approssimativo):")
+                for address in addresses_list:
+                    st.write(f"- {address}")
             else:
-                st.error("Errore nella geocodifica.")
-
-    # Tab 6: Stima del traffico in tempo reale
-    with tab6:
-        st.header("Stima del Tempo con Traffico")
-        origin = st.text_input("Punto di partenza", "Via Roma, Milano")
-        destination = st.text_input("Destinazione", "Piazza Duomo, Firenze")
-
-        if st.button("Calcola Tempo con Traffico", key="tab6"):
-            url = (f"https://maps.googleapis.com/maps/api/directions/json?"
-                   f"origin={origin}&destination={destination}&departure_time=now&key={api_key}")
-            response = requests.get(url).json()
-
-            if response.get('routes'):
-                duration_in_traffic = response['routes'][0]['legs'][0]['duration_in_traffic']['text']
-                st.success(f"Tempo stimato considerando il traffico: {duration_in_traffic}")
-            else:
-                st.error("Errore nel calcolo del tempo con traffico.")
-
-    # Altri esempi sono aggiunti come tab7, tab8, etc.
+                st.error("Errore nell'ottimizzazione.")
 
