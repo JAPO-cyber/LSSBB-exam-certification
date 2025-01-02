@@ -15,6 +15,10 @@ st.title("Route Optimization con OR-Tools e Google Maps API")
 st.sidebar.header("Configurazione API")
 api_key = st.sidebar.text_input("Inserisci la tua API Key", type="password")
 
+# Variabile di stato per la mappa
+if "map_data" not in st.session_state:
+    st.session_state.map_data = None
+
 # Controllo della chiave API
 if not api_key:
     st.warning("Inserisci la tua API Key per utilizzare la funzionalità.")
@@ -141,7 +145,7 @@ else:
                                             icon=folium.Icon(color="green" if idx == len(route_info["legs"]) - 1 else "red")
                                         ).add_to(m)
 
-                                st_folium(m, width=700, height=500)
+                                st.session_state.map_data = m
                             else:
                                 st.error("Errore nella visualizzazione del percorso.")
                         except Exception as e:
@@ -150,6 +154,10 @@ else:
                 st.error(f"Errore durante la richiesta API: {e}")
             except Exception as e:
                 st.error(f"Errore durante l'elaborazione: {e}")
+
+# Visualizza la mappa persistente se disponibile
+if st.session_state.map_data:
+    st_folium(st.session_state.map_data, width=700, height=500)
 
 
 
