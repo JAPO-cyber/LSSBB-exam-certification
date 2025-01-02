@@ -29,9 +29,6 @@ tabs = st.tabs(["Nuovo Dato", "Modifica Dati", "Scarica CSV"])
 with tabs[0]:
     st.title("Inserimento Nuovo Dato")
 
-    if "fermi" not in st.session_state:
-        st.session_state.fermi = []
-
     col1, col2 = st.columns(2)
 
     with col1:
@@ -44,22 +41,28 @@ with tabs[0]:
         hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"])
         soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10)
 
-        # Campo "Giorno"
-        giorno = st.date_input("Giorno", value=datetime.today().date())
-        
-        # Campo "Durata"
-        durata = st.number_input("Durata (minuti)", min_value=0, step=1)
-
-        # Campo "Ora Orologio" con HTML personalizzato
-        st.subheader("Ora Orologio")
-        ora_orologio_html = """
-        <label for="timeInput" style="font-size: 16px; color: white;">Ora Orologio:</label>
-        <input type="time" id="timeInput" value="12:00" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
+        # Campo "Giorno" con HTML personalizzato
+        st.subheader("Giorno")
+        giorno_html = f"""
+        <label for="giorno" style="font-size: 16px; color: white;">Seleziona Giorno:</label>
+        <input type="date" id="giorno" value="{datetime.today().strftime('%Y-%m-%d')}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
+        <script>
+            const dateInput = document.getElementById('giorno');
+            dateInput.addEventListener('change', (event) => {{
+                const selectedDate = event.target.value.split('-').reverse().join('/');
+                console.log("Data selezionata:", selectedDate);
+            }});
+        </script>
         """
-        ora_orologio = st.components.v1.html(ora_orologio_html, height=70)
+        giorno = st.components.v1.html(giorno_html, height=70)
+
+        durata = st.number_input("Durata (minuti)", min_value=0, step=1)
 
     with col2:
         st.subheader("Fermi Dinamici")
+        if "fermi" not in st.session_state:
+            st.session_state.fermi = []
+
         col3, col4 = st.columns(2)
         with col3:
             add_button = st.button("Aggiungi Fermo")
@@ -80,86 +83,8 @@ with tabs[0]:
 
     if submit_button:
         if conferma:
-            df_new = pd.DataFrame([{
-                "Nome": nome,
-                "Età": età,
-                "Altezza (cm)": altezza,
-                "Descrizione": descrizione,
-                "Genere": genere,
-                "Hobby": " -- ".join(hobby),
-                "Soddisfazione": soddisfazione,
-                "Fermi": " -- ".join(st.session_state.fermi),
-                "Giorno": giorno,
-                "Durata": durata,
-                "Ora Orologio": "12:00"  # Valore predefinito
-            }])
-
-            df_existing = load_data()
-            df_updated = pd.concat([df_existing, df_new], ignore_index=True)
-            save_data(df_updated)
-            st.success("Dati aggiunti con successo!")
-
-# Scheda 2: Modifica Dati
-with tabs[1]:
-    st.title("Modifica Dati")
-
-    df = load_data()
-    if df.empty:
-        st.warning("Non ci sono dati disponibili per la modifica.")
-    else:
-        st.write("Dati attualmente salvati:")
-        st.dataframe(df)
-
-        # Selezione della riga da modificare
-        row_index = st.number_input("Seleziona la riga da modificare (0 per la prima)", min_value=0, max_value=len(df)-1, step=1)
-        st.write("Riga selezionata:")
-        st.write(df.iloc[row_index])
-
-        with st.form("edit_form"):
-            nome = st.text_input("Nome", df.iloc[row_index]["Nome"])
-            età = st.number_input("Età", min_value=0, step=1, value=int(df.iloc[row_index]["Età"]))
-            altezza = st.number_input("Altezza (in cm)", min_value=0.0, step=0.1, value=float(df.iloc[row_index]["Altezza (cm)"]))
-            descrizione = st.text_area("Descrizione", df.iloc[row_index]["Descrizione"])
-            genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"], index=["Maschio", "Femmina", "Altro"].index(df.iloc[row_index]["Genere"]))
-            hobby = st.text_area("Hobby (separati da --)", value=df.iloc[row_index]["Hobby"])
-            fermi = st.text_area("Fermi (separati da --)", value=df.iloc[row_index]["Fermi"] if "Fermi" in df.columns else "")
-
-            # Gestione di "Giorno"
-            giorno_val = pd.to_datetime(df.iloc[row_index]["Giorno"], errors="coerce")
-            if pd.isna(giorno_val):
-                giorno_val = datetime.today().date()  # Predefinita alla data odierna
-            giorno = st.date_input("Giorno", value=giorno_val)
-
-            # Gestione di "Durata"
-            durata_val = df.iloc[row_index]["Durata"] if "Durata" in df.columns else 0
-            if pd.isna(durata_val):
-                durata_val = 0  # Predefinito a 0 se il valore è mancante
-            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(durata_val))
-
-            ora_corrente = df.iloc[row_index]["Ora Orologio"] if "Ora Orologio" in df.columns else "12:00"
-            ora_orologio_html = f"""
-            <label for="timeInput" style="font-size: 16px; color: white;">Ora Orologio:</label>
-            <input type="time" id="timeInput" value="{ora_corrente}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
-            """
-            st.components.v1.html(ora_orologio_html, height=70)
-
-            save_button = st.form_submit_button("Salva Modifiche")
-
-        if save_button:
-            df.at[row_index, "Nome"] = nome
-            df.at[row_index, "Età"] = età
-            df.at[row_index, "Altezza (cm)"] = altezza
-            df.at[row_index, "Descrizione"] = descrizione
-            df.at[row_index, "Genere"] = genere
-            df.at[row_index, "Hobby"] = hobby
-            df.at[row_index, "Fermi"] = fermi
-            df.at[row_index, "Giorno"] = giorno
-            df.at[row_index, "Durata"] = durata
-            df.at[row_index, "Ora Orologio"] = ora_corrente
-
-            save_data(df)
-            st.success("Modifiche salvate con successo!")
-            st.dataframe(df)
+            st.success("Dati inviati con successo!")
+            # Elaborazione finale per il salvataggio può essere aggiunta qui
 
 # Scheda 3: Scarica CSV
 with tabs[2]:
