@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import folium
 from streamlit_folium import st_folium
-from shapely.geometry import Point, Polygon
 
 # Configurazione dell'app
 st.set_page_config(page_title="Google Maps API Demo", layout="wide")
@@ -18,128 +17,140 @@ api_key = st.sidebar.text_input("Inserisci la tua API Key", type="password")
 if not api_key:
     st.warning("Inserisci la tua API Key per utilizzare le funzionalità.")
 else:
-    # Scelta della funzionalità
-    funzionalita = st.selectbox(
-        "Scegli una funzionalità",
-        [
-            "Calcolo del Costo di Consegna e CO₂",
-            "Zone di Consegna Intelligenti",
-            "Ottimizzazione Multi-Consegna",
-            "Pianificazione del Carico"
-        ]
-    )
+    # Tabs per gli esempi
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+        "Calcolo Spese di Spedizione",
+        "Ottimizzazione Percorsi",
+        "Monitoraggio Tempo Reale",
+        "Luoghi di Ritiro Vicini",
+        "Geocoding Indirizzi",
+        "Traffico in Tempo Reale",
+        "Multi-Consegne",
+        "Monitoraggio Parco Veicoli",
+        "Tempi di Consegna Multipli",
+        "Ottimizzazione del Carico"
+    ])
 
-    # **1. Calcolo del Costo di Consegna e CO₂**
-    if funzionalita == "Calcolo del Costo di Consegna e CO₂":
-        st.header("Calcolo del Costo di Consegna e CO₂")
+    # Tab 1: Calcolo spese di spedizione
+    with tab1:
+        st.header("Calcolo Spese di Spedizione")
         origin = st.text_input("Indirizzo di partenza", "Via Roma, Milano")
         destination = st.text_input("Indirizzo di destinazione", "Piazza Duomo, Firenze")
-        costo_per_km = st.number_input("Costo per km (€)", min_value=0.0, value=0.5, step=0.1)
-        emissioni_co2_per_km = st.number_input("Emissioni di CO₂ per km (g)", min_value=0.0, value=120.0, step=1.0)
 
-        if st.button("Calcola"):
+        if st.button("Calcola Distanza", key="tab1"):
             url = f"https://maps.googleapis.com/maps/api/distancematrix/json?origins={origin}&destinations={destination}&key={api_key}"
             response = requests.get(url).json()
 
             if response.get('rows'):
-                distanza = response['rows'][0]['elements'][0]['distance']['value'] / 1000  # Converti in km
-                costo_totale = distanza * costo_per_km
-                emissioni_totali = distanza * emissioni_co2_per_km
-                st.success(f"Distanza: {distanza:.2f} km")
-                st.info(f"Costo totale: €{costo_totale:.2f}")
-                st.info(f"Emissioni di CO₂: {emissioni_totali:.2f} g")
+                distance = response['rows'][0]['elements'][0]['distance']['text']
+                duration = response['rows'][0]['elements'][0]['duration']['text']
+                st.success(f"Distanza: {distance}, Tempo stimato: {duration}")
             else:
                 st.error("Errore nel calcolo della distanza.")
 
-    # **2. Zone di Consegna Intelligenti**
-    elif funzionalita == "Zone di Consegna Intelligenti":
-        st.header("Zone di Consegna Intelligenti")
-        address = st.text_input("Indirizzo da verificare", "Piazza Duomo, Milano")
-        zona = st.text_area(
-            "Coordinate della zona (latitudine, longitudine per riga)",
-            "45.464211, 9.191383\n45.466533, 9.185723\n45.465422, 9.188553"
-        )
+    # Tab 7: Multi-Consegne
+    with tab7:
+        st.header("Pianificazione Multi-Consegne")
+        origins = st.text_input("Indirizzi di partenza (separati da '|')", "Via Roma, Milano|Via Torino, Torino")
+        destinations = st.text_input("Indirizzi di destinazione (separati da '|')", "Piazza Duomo, Firenze|Via Napoli, Napoli")
 
-        if st.button("Verifica Zona"):
-            # Ottieni coordinate dell'indirizzo
-            geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
-            geocode_response = requests.get(geocode_url).json()
-            if geocode_response.get("results"):
-                location = geocode_response["results"][0]["geometry"]["location"]
-                point = Point(location["lat"], location["lng"])
-                
-                # Crea poligono della zona
-                zona_coords = [
-                    tuple(map(float, line.split(", ")))
-                    for line in zona.strip().split("\n")
-                ]
-                polygon = Polygon(zona_coords)
-
-                # Verifica se il punto è nella zona
-                if polygon.contains(point):
-                    st.success("L'indirizzo si trova nella zona definita.")
-                else:
-                    st.error("L'indirizzo non si trova nella zona definita.")
-            else:
-                st.error("Errore nel calcolo delle coordinate dell'indirizzo.")
-
-    # **3. Ottimizzazione Multi-Consegna**
-    elif funzionalita == "Ottimizzazione Multi-Consegna":
-        st.header("Ottimizzazione Multi-Consegna")
-        addresses = st.text_area("Inserisci gli indirizzi (uno per riga)", "Via Roma, Milano\nPiazza Duomo, Firenze\nVia Napoli, Napoli")
-
-        if st.button("Ottimizza Percorso"):
-            addresses_list = addresses.split("\n")
-            origins = "|".join(addresses_list)
-            destinations = "|".join(addresses_list)
-
+        if st.button("Calcola Distanze", key="tab7"):
             url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
                    f"origins={origins}&destinations={destinations}&key={api_key}")
             response = requests.get(url).json()
 
             if response.get('rows'):
-                visited = [addresses_list[0]]  # Partenza dal primo indirizzo
-                to_visit = set(addresses_list[1:])
-
-                while to_visit:
-                    current = visited[-1]
-                    distances = {}
-                    for destination in to_visit:
-                        origin_idx = addresses_list.index(current)
-                        dest_idx = addresses_list.index(destination)
-                        element = response['rows'][origin_idx]['elements'][dest_idx]
-                        if element['status'] == "OK":
-                            distances[destination] = element['distance']['value']
-                    # Trova il più vicino
-                    next_stop = min(distances, key=distances.get)
-                    visited.append(next_stop)
-                    to_visit.remove(next_stop)
-
-                st.write("Ordine ottimizzato:")
-                for address in visited:
-                    st.write(f"- {address}")
+                st.write("Distanze calcolate:")
+                for i, row in enumerate(response['rows']):
+                    for j, element in enumerate(row['elements']):
+                        origin = origins.split('|')[i]
+                        destination = destinations.split('|')[j]
+                        st.write(f"- Da {origin} a {destination}: {element['distance']['text']}, {element['duration']['text']}")
             else:
-                st.error("Errore nel calcolo della matrice di distanze.")
+                st.error("Errore nel calcolo delle distanze.")
 
-    # **4. Pianificazione del Carico**
-    elif funzionalita == "Pianificazione del Carico":
-        st.header("Pianificazione del Carico")
-        carico_max = st.number_input("Capacità massima del veicolo (kg)", min_value=1, value=1000)
-        ordini = st.text_area(
-            "Inserisci gli ordini (formato: Indirizzo, Peso in kg per riga)",
-            "Via Roma, Milano, 300\nPiazza Duomo, Firenze, 500\nVia Napoli, Napoli, 200"
-        )
+    # Tab 8: Monitoraggio Parco Veicoli
+    with tab8:
+        st.header("Monitoraggio Parco Veicoli")
+        vehicle_locations = [
+            {"name": "Camion 1", "lat": 45.464211, "lon": 9.191383},
+            {"name": "Camion 2", "lat": 45.465422, "lon": 9.188553},
+            {"name": "Camion 3", "lat": 45.466533, "lon": 9.185723},
+        ]
 
-        if st.button("Pianifica Carico"):
-            ordini_list = [
-                line.split(", ") for line in ordini.strip().split("\n")
-            ]
-            totale_peso = sum(int(ordine[2]) for ordine in ordini_list)
-            if totale_peso > carico_max:
-                st.warning(f"Il carico totale ({totale_peso} kg) supera la capacità del veicolo ({carico_max} kg).")
+        # Creazione mappa con Folium
+        m = folium.Map(location=[45.464211, 9.191383], zoom_start=13)
+        for vehicle in vehicle_locations:
+            folium.Marker(
+                location=[vehicle["lat"], vehicle["lon"]],
+                popup=f"{vehicle['name']}",
+                icon=folium.Icon(color="blue")
+            ).add_to(m)
+
+        st_folium(m, width=700, height=500)
+
+    # Tab 9: Tempi di Consegna Multipli
+    with tab9:
+        st.header("Tempi di Consegna Multipli")
+        warehouse = st.text_input("Indirizzo del magazzino", "Via Roma, Milano", key="warehouse_tab9")
+        customers = st.text_input("Indirizzi dei clienti (separati da '|')", "Piazza Duomo, Firenze|Via Napoli, Napoli", key="customers_tab9")
+
+        if st.button("Calcola Tempi di Consegna", key="tab9"):
+            url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
+                   f"origins={warehouse}&destinations={customers}&key={api_key}")
+            response = requests.get(url).json()
+
+            if response.get('rows') and response['rows'][0]['elements']:
+                st.write("Tempi di consegna stimati:")
+                for i, element in enumerate(response['rows'][0]['elements']):
+                    destination = customers.split('|')[i]
+                    if element['status'] == "OK":
+                        st.write(f"- A {destination}: {element['duration']['text']}")
+                    else:
+                        st.warning(f"- A {destination}: Nessuna stima disponibile")
             else:
-                st.success("Il carico totale rientra nei limiti!")
-                for ordine in ordini_list:
-                    st.write(f"- {ordine[0]}: {ordine[2]} kg")
+                st.error("Errore nel calcolo dei tempi di consegna.")
+
+    # Tab 10: Ottimizzazione del Carico
+    with tab10:
+        st.header("Ottimizzazione del Carico")
+        addresses = st.text_area("Inserisci gli indirizzi (uno per riga)", "Via Roma, Milano\nPiazza Duomo, Firenze\nVia Napoli, Napoli", key="addresses_tab10")
+
+        if st.button("Ottimizza Ordine di Consegna", key="tab10"):
+            addresses_list = addresses.split("\n")
+            if len(addresses_list) < 2:
+                st.warning("Inserisci almeno due indirizzi per l'ottimizzazione.")
+            else:
+                # Calcolo della Distance Matrix per tutti i punti
+                origins = "|".join(addresses_list)
+                destinations = "|".join(addresses_list)
+
+                url = (f"https://maps.googleapis.com/maps/api/distancematrix/json?"
+                       f"origins={origins}&destinations={destinations}&key={api_key}")
+                response = requests.get(url).json()
+
+                if response.get('rows'):
+                    st.write("Ordine di consegna ottimizzato (approssimativo):")
+                    visited = [addresses_list[0]]  # Partenza dal primo indirizzo
+                    to_visit = set(addresses_list[1:])
+
+                    while to_visit:
+                        current = visited[-1]
+                        distances = {}
+                        for destination in to_visit:
+                            origin_idx = addresses_list.index(current)
+                            dest_idx = addresses_list.index(destination)
+                            element = response['rows'][origin_idx]['elements'][dest_idx]
+                            if element['status'] == "OK":
+                                distances[destination] = element['distance']['value']  # Distanza in metri
+                        # Trova il più vicino
+                        next_stop = min(distances, key=distances.get)
+                        visited.append(next_stop)
+                        to_visit.remove(next_stop)
+
+                    for address in visited:
+                        st.write(f"- {address}")
+                else:
+                    st.error("Errore nel calcolo della matrice di distanze.")
 
 
