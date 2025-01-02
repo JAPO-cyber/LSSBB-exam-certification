@@ -2,29 +2,24 @@ import streamlit as st
 import pandas as pd
 import os
 
-# Percorso del folder data
-folder_path = "data"
-file_path = os.path.join(folder_path, "dati.csv")
+# Percorso del file CSV
+file_path = os.path.join("data", "1_Input Dati.csv")
 
-# Creazione della cartella se non esiste
-if not os.path.exists(folder_path):
-    os.makedirs(folder_path)
-
-# Creazione del file CSV vuoto se non esiste
-if not os.path.exists(file_path):
-    df_empty = pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi"])
-    df_empty.to_csv(file_path, index=False)
-
-# Funzione per caricare i dati
+# Funzione per caricare i dati dal file
 def load_data():
     if os.path.exists(file_path):
         return pd.read_csv(file_path)
     else:
+        st.error(f"Il file {file_path} non esiste. Assicurati che sia presente nella directory specificata.")
         return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi"])
 
-# Funzione per salvare i dati
+# Funzione per salvare i dati nel file
 def save_data(df):
-    df.to_csv(file_path, index=False)
+    try:
+        df.to_csv(file_path, index=False)
+        st.success(f"File salvato con successo in: {file_path}")
+    except Exception as e:
+        st.error(f"Errore durante il salvataggio del file: {e}")
 
 # Schede Streamlit
 tabs = st.tabs(["Nuovo Dato", "Modifica Dati", "Scarica CSV"])
@@ -144,9 +139,8 @@ with tabs[2]:
         st.download_button(
             label="Scarica CSV",
             data=csv_data,
-            file_name="dati.csv",
+            file_name="1_Input Dati.csv",
             mime="text/csv"
         )
-
 
 
