@@ -54,7 +54,8 @@ with tabs[0]:
         st.subheader("Ora Orologio")
         ora_orologio = st.components.v1.html(
             """
-            <input type="time" id="timeInput" value="12:00" style="font-size: 18px; padding: 5px;">
+            <label for="timeInput" style="font-size: 16px; color: white;">Ora Orologio:</label>
+            <input type="time" id="timeInput" value="12:00" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
             <script>
                 const timeInput = document.getElementById("timeInput");
                 timeInput.addEventListener("change", (event) => {
@@ -63,7 +64,7 @@ with tabs[0]:
                 });
             </script>
             """,
-            height=50,
+            height=70,
         )
 
     with col2:
@@ -99,7 +100,7 @@ with tabs[0]:
                 "Fermi": " -- ".join(st.session_state.fermi),
                 "Giorno": giorno,
                 "Durata": durata,
-                "Ora Orologio": ora_orologio  # Da implementare il recupero del valore
+                "Ora Orologio": "12:00"  # Da implementare il recupero del valore
             }])
 
             df_existing = load_data()
@@ -126,5 +127,6 @@ with tabs[2]:
             file_name="1_Input Dati.csv",
             mime="text/csv"
         )
+
 
 
