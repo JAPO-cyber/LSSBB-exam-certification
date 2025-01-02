@@ -128,3 +128,4 @@ if st.session_state.map_data is not None:
     st_folium(st.session_state.map_data, width=700, height=500)
 
 
+
