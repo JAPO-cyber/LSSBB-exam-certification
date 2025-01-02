@@ -4,3 +4,4 @@ plotly
 requests
 folium
 streamlit_folium
+shapely
