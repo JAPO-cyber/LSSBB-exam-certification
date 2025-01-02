@@ -33,6 +33,24 @@ tabs = st.tabs(["Nuovo Dato", "Modifica Dati"])
 with tabs[0]:
     st.title("Inserimento Nuovo Dato")
 
+    # Inizializzazione dinamica per i fermi
+    if "fermi" not in st.session_state:
+        st.session_state.fermi = []
+
+    # Pulsanti per aggiungere o rimuovere fermi
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Aggiungi Fermo"):
+            st.session_state.fermi.append("")
+    with col2:
+        if st.button("Rimuovi Fermo") and len(st.session_state.fermi) > 0:
+            st.session_state.fermi.pop()
+
+    # Visualizzazione campi dinamici
+    st.subheader("Fermi")
+    for i in range(len(st.session_state.fermi)):
+        st.session_state.fermi[i] = st.text_input(f"Fermo {i+1}", value=st.session_state.fermi[i], key=f"fermo_{i}")
+
     # Form per l'inserimento di dati
     with st.form("complete_form"):
         nome = st.text_input("Nome", placeholder="Inserisci il tuo nome")
@@ -42,25 +60,6 @@ with tabs[0]:
         genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"])
         hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"])
         soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10)
-
-        # Sezione dinamica per l'inserimento dei fermi
-        st.subheader("Fermi")
-        if "fermi" not in st.session_state:
-            st.session_state.fermi = []
-
-        # Visualizzazione campi dinamici
-        for i in range(len(st.session_state.fermi)):
-            st.session_state.fermi[i] = st.text_input(f"Fermo {i+1}", value=st.session_state.fermi[i], key=f"fermo_{i}")
-
-        # Pulsanti per aggiungere o rimuovere fermi
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Aggiungi Fermo"):
-                st.session_state.fermi.append("")
-        with col2:
-            if st.button("Rimuovi Fermo") and len(st.session_state.fermi) > 0:
-                st.session_state.fermi.pop()
-
         conferma = st.checkbox("Confermi che i dati inseriti sono corretti?")
         submit_button = st.form_submit_button("Invia")
 
@@ -130,6 +129,4 @@ with tabs[1]:
             save_data(df)
             st.success("Modifiche salvate con successo!")
             st.dataframe(df)
-
-
 
