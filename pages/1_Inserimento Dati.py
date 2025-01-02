@@ -6,17 +6,19 @@ import os
 folder_path = "data"
 file_path = os.path.join(folder_path, "dati.csv")
 
-# Creazione del folder se non esiste
+# Creazione della cartella se non esiste
 if not os.path.exists(folder_path):
     os.makedirs(folder_path)
+
+# Creazione del file CSV vuoto se non esiste
+if not os.path.exists(file_path):
+    df_empty = pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi"])
+    df_empty.to_csv(file_path, index=False)
 
 # Funzione per caricare i dati
 def load_data():
     if os.path.exists(file_path):
-        df = pd.read_csv(file_path)
-        if "Fermi" not in df.columns:
-            df["Fermi"] = ""  # Inizializza la colonna "Fermi" se non esiste
-        return df
+        return pd.read_csv(file_path)
     else:
         return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi"])
 
@@ -24,13 +26,8 @@ def load_data():
 def save_data(df):
     df.to_csv(file_path, index=False)
 
-# Controllo login
-if "logged_in" not in st.session_state or not st.session_state.logged_in:
-    st.warning("Non sei autorizzato a visualizzare questa pagina. Accedi prima!")
-    st.stop()
-
-# Schede
-tabs = st.tabs(["Nuovo Dato", "Modifica Dati"])
+# Schede Streamlit
+tabs = st.tabs(["Nuovo Dato", "Modifica Dati", "Scarica CSV"])
 
 # Scheda 1: Nuovo Dato
 with tabs[0]:
@@ -79,19 +76,15 @@ with tabs[0]:
                 "Altezza (cm)": altezza,
                 "Descrizione": descrizione,
                 "Genere": genere,
-                "Hobby": ", ".join(hobby),
+                "Hobby": " -- ".join(hobby),
                 "Soddisfazione": soddisfazione,
-                "Fermi": ", ".join(st.session_state.fermi)
+                "Fermi": " -- ".join(st.session_state.fermi)
             }])
 
-            if not os.path.exists(file_path):
-                df_new.to_csv(file_path, index=False)
-                st.success("File CSV creato con i tuoi dati!")
-            else:
-                df_existing = load_data()
-                df_updated = pd.concat([df_existing, df_new], ignore_index=True)
-                save_data(df_updated)
-                st.success("Dati aggiunti con successo al file CSV esistente!")
+            df_existing = load_data()
+            df_updated = pd.concat([df_existing, df_new], ignore_index=True)
+            save_data(df_updated)
+            st.success("Dati aggiunti con successo!")
 
 # Scheda 2: Modifica Dati
 with tabs[1]:
@@ -114,14 +107,11 @@ with tabs[1]:
             altezza = st.number_input("Altezza (in cm)", min_value=0.0, step=0.1, value=float(df.iloc[row_index]["Altezza (cm)"]))
             descrizione = st.text_area("Descrizione", df.iloc[row_index]["Descrizione"])
             genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"], index=["Maschio", "Femmina", "Altro"].index(df.iloc[row_index]["Genere"]))
-            hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"], default=df.iloc[row_index]["Hobby"].split(", "))
-            soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10, value=int(df.iloc[row_index]["Soddisfazione"]))
-            
-            # Gestione valori mancanti nella colonna "Fermi"
+            hobby = st.text_area("Hobby (separati da --)", value=df.iloc[row_index]["Hobby"])
             fermi = df.iloc[row_index].get("Fermi", "")
             if pd.isna(fermi):
                 fermi = ""
-            fermi = st.text_area("Fermi (separati da virgola)", value=fermi)
+            fermi = st.text_area("Fermi (separati da --)", value=fermi)
 
             save_button = st.form_submit_button("Salva Modifiche")
 
@@ -131,12 +121,28 @@ with tabs[1]:
             df.at[row_index, "Altezza (cm)"] = altezza
             df.at[row_index, "Descrizione"] = descrizione
             df.at[row_index, "Genere"] = genere
-            df.at[row_index, "Hobby"] = ", ".join(hobby)
-            df.at[row_index, "Soddisfazione"] = soddisfazione
+            df.at[row_index, "Hobby"] = hobby
             df.at[row_index, "Fermi"] = fermi
 
             save_data(df)
             st.success("Modifiche salvate con successo!")
             st.dataframe(df)
+
+# Scheda 3: Scarica CSV
+with tabs[2]:
+    st.title("Scarica CSV")
+
+    df = load_data()
+    if df.empty:
+        st.warning("Non ci sono dati disponibili per il download.")
+    else:
+        st.write("Anteprima del file CSV:")
+        st.dataframe(df)
+
+        # Scarica il file CSV
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            la
+
 
 
