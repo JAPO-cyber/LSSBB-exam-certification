@@ -65,7 +65,6 @@ if submit_button:
             "Data di nascita": data_nascita,
             "Orario preferito": orario_preferito,
             "Colore preferito": colore_preferito,
-            "Priorità": priorità,
         }
         df = pd.DataFrame([data])
         st.dataframe(df)
