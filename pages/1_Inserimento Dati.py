@@ -99,27 +99,54 @@ with tabs[0]:
     if submit_button:
         if conferma:
             st.success("Dati inviati con successo!")
-            # Elaborazione finale per il salvataggio può essere aggiunta qui
 
-# Scheda 3: Scarica CSV
-with tabs[2]:
-    st.title("Scarica CSV")
+# Scheda 2: Modifica Dati
+with tabs[1]:
+    st.title("Modifica Dati")
 
     df = load_data()
     if df.empty:
-        st.warning("Non ci sono dati disponibili per il download.")
+        st.warning("Non ci sono dati disponibili per la modifica.")
     else:
-        st.write("Anteprima del file CSV:")
+        st.write("Dati attualmente salvati:")
         st.dataframe(df)
 
-        # Scarica il file CSV
-        csv_data = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Scarica CSV",
-            data=csv_data,
-            file_name="1_Input Dati.csv",
-            mime="text/csv"
-        )
+        # Selezione della riga da modificare
+        row_index = st.number_input("Seleziona la riga da modificare (0 per la prima)", min_value=0, max_value=len(df)-1, step=1)
+        st.write("Riga selezionata:")
+        st.write(df.iloc[row_index])
+
+        with st.form("edit_form"):
+            nome = st.text_input("Nome", df.iloc[row_index]["Nome"])
+            età = st.number_input("Età", min_value=0, step=1, value=int(df.iloc[row_index]["Età"]))
+            altezza = st.number_input("Altezza (in cm)", min_value=0.0, step=0.1, value=float(df.iloc[row_index]["Altezza (cm)"]))
+            descrizione = st.text_area("Descrizione", df.iloc[row_index]["Descrizione"])
+            genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"], index=["Maschio", "Femmina", "Altro"].index(df.iloc[row_index]["Genere"]))
+            hobby = st.text_area("Hobby (separati da --)", value=df.iloc[row_index]["Hobby"])
+            fermi = st.text_area("Fermi (separati da --)", value=df.iloc[row_index]["Fermi"] if "Fermi" in df.columns else "")
+
+            # Campo "Giorno" (modificabile)
+            giorno_val = pd.to_datetime(df.iloc[row_index]["Giorno"], errors="coerce")
+            if pd.isna(giorno_val):
+                giorno_val = datetime.today().date()
+            giorno_html = f"""
+            <label for="giornoMod" style="font-size: 16px; color: white;">Modifica Giorno:</label>
+            <input type="date" id="giornoMod" value="{giorno_val.strftime('%Y-%m-%d')}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
+            """
+            st.components.v1.html(giorno_html, height=70)
+
+            # Campo "Ora Orologio" (modificabile)
+            ora_corrente = df.iloc[row_index]["Ora Orologio"] if "Ora Orologio" in df.columns else "12:00"
+            ora_orologio_html = f"""
+            <label for="timeInputMod" style="font-size: 16px; color: white;">Modifica Ora:</label>
+            <input type="time" id="timeInputMod" value="{ora_corrente}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
+            """
+            st.components.v1.html(ora_orologio_html, height=70)
+
+            save_button = st.form_submit_button("Salva Modifiche")
+
+        if save_button:
+            st.success("Modifiche salvate con successo!")
 
 
 
