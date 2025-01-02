@@ -1,130 +1,140 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import numpy as np
+import os
 
-# Path to the dataset
-file_path = "data/1_Input_Dati_updated.csv"  # Update this to the actual path
+# Percorso del file CSV
+file_path = os.path.join("data", "1_Input Dati.csv")
 
-# Load the data
-@st.cache
+# Funzione per caricare i dati
 def load_data():
     if os.path.exists(file_path):
         return pd.read_csv(file_path)
     else:
-        st.error("File not found!")
-        return pd.DataFrame()
+        st.error(f"Il file {file_path} non esiste. Assicurati che sia presente nella directory specificata.")
+        return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi", "Giorno", "Durata", "Ora Orologio"])
 
+# Titolo dell'app
+st.title("Analisi dei Dati Inseriti")
+
+# Caricamento dei dati
 df = load_data()
 
-# Analytics Dashboard
-st.title("Advanced Analytics Dashboard")
-
 if df.empty:
-    st.warning("No data available for analysis.")
+    st.warning("Non ci sono dati disponibili per generare grafici.")
 else:
-    # Menu for analytics
-    menu = st.sidebar.radio(
-        "Select an Analysis Type",
+    # Menu per selezionare la scheda
+    menu = st.selectbox(
+        "Seleziona una categoria da analizzare:",
         [
-            "Summary Statistics",
-            "Correlations",
-            "Group-Level Analysis",
-            "Time-Based Trends",
-            "Custom Metrics",
+            "Distribuzione Età",
+            "Distribuzione Soddisfazione",
+            "Fermi Totali",
+            "Durata Media per Genere",
+            "Hobby più Popolari",
+            "Grafico Personalizzato",
         ],
     )
 
-    # 1. Summary Statistics
-    if menu == "Summary Statistics":
-        st.header("Summary Statistics")
-        st.write(df.describe(include="all").T)
-        st.write("**Missing Values:**")
-        st.write(df.isnull().sum())
-
-    # 2. Correlations
-    elif menu == "Correlations":
-        st.header("Correlations Between Numeric Columns")
-        numeric_df = df.select_dtypes(include=["number"])
-        if not numeric_df.empty:
-            correlation_matrix = numeric_df.corr()
-            st.write(correlation_matrix)
-
-            fig = px.imshow(
-                correlation_matrix,
-                title="Correlation Heatmap",
-                labels=dict(x="Features", y="Features", color="Correlation"),
-                text_auto=True,
-            )
+    # Distribuzione Età
+    if menu == "Distribuzione Età":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Distribuzione Età")
+            fig = px.histogram(df, x="Età", nbins=10, title="Distribuzione delle Età")
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.write("No numeric data available for correlation analysis.")
+        with col2:
+            st.subheader("Descrizione")
+            st.write("""
+                Questo grafico mostra la distribuzione delle età tra i dati inseriti.
+                Ogni barra rappresenta un intervallo di età e il numero di persone che rientrano in quell'intervallo.
+            """)
 
-    # 3. Group-Level Analysis
-    elif menu == "Group-Level Analysis":
-        st.header("Group-Level Analysis")
-        group_column = st.selectbox("Select a Grouping Column", df.columns)
-        value_column = st.selectbox("Select a Numeric Column for Aggregation", df.select_dtypes(include=["number"]).columns)
-
-        group_stats = df.groupby(group_column)[value_column].agg(["mean", "sum", "count"]).reset_index()
-        st.write(group_stats)
-
-        fig = px.bar(
-            group_stats,
-            x=group_column,
-            y="mean",
-            title=f"Mean of {value_column} by {group_column}",
-            labels={group_column: "Group", "mean": f"Mean {value_column}"},
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    # 4. Time-Based Trends
-    elif menu == "Time-Based Trends":
-        st.header("Time-Based Trends")
-
-        # Ensure "Giorno" is in datetime format
-        if "Giorno" in df.columns:
-            df["Giorno"] = pd.to_datetime(df["Giorno"], errors="coerce")
-
-            time_metric = st.selectbox(
-                "Select a Metric for Time Analysis", df.select_dtypes(include=["number"]).columns
-            )
-            time_data = df.groupby("Giorno")[time_metric].mean().reset_index()
-
-            fig = px.line(
-                time_data,
-                x="Giorno",
-                y=time_metric,
-                title=f"{time_metric} Over Time",
-                labels={"Giorno": "Date", time_metric: "Metric Value"},
-            )
+    # Distribuzione Soddisfazione
+    elif menu == "Distribuzione Soddisfazione":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Distribuzione Soddisfazione")
+            fig = px.histogram(df, x="Soddisfazione", nbins=10, title="Livello di Soddisfazione")
             st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.write("The dataset does not contain a 'Giorno' column.")
+        with col2:
+            st.subheader("Descrizione")
+            st.write("""
+                Questo grafico mostra la distribuzione del livello di soddisfazione
+                tra i partecipanti. Il livello varia da 1 a 10, con 10 come il massimo.
+            """)
 
-    # 5. Custom Metrics
-    elif menu == "Custom Metrics":
-        st.header("Custom Metrics")
+    # Fermi Totali
+    elif menu == "Fermi Totali":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Fermi Totali")
+            df["Numero Fermi"] = df["Fermi"].apply(lambda x: len(x.split(" -- ")) if isinstance(x, str) else 0)
+            fig = px.bar(df, x="Nome", y="Numero Fermi", title="Numero di Fermi per Utente")
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.subheader("Descrizione")
+            st.write("""
+                Questo grafico mostra il numero totale di fermi registrati per ogni utente.
+                È utile per identificare chi ha segnalato il maggior numero di fermi.
+            """)
 
-        # Example: Calculate normalized satisfaction score
-        if "Soddisfazione" in df.columns:
-            df["Normalized Soddisfazione"] = (
-                (df["Soddisfazione"] - df["Soddisfazione"].mean()) / df["Soddisfazione"].std()
-            )
-            st.write("Normalized Satisfaction Scores:")
-            st.write(df[["Nome", "Soddisfazione", "Normalized Soddisfazione"]])
+    # Durata Media per Genere
+    elif menu == "Durata Media per Genere":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Durata Media per Genere")
+            df["Durata"] = pd.to_numeric(df["Durata"], errors="coerce").fillna(0)
+            duration_by_genre = df.groupby("Genere")["Durata"].mean().reset_index()
+            fig = px.bar(duration_by_genre, x="Genere", y="Durata", title="Durata Media per Genere")
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.subheader("Descrizione")
+            st.write("""
+                Questo grafico mostra la durata media registrata per ciascun genere.
+                Consente di analizzare eventuali differenze nei tempi di attività tra i generi.
+            """)
 
-        # Example: Hobby diversity score
-        if "Hobby" in df.columns:
-            df["Hobby Count"] = df["Hobby"].apply(lambda x: len(x.split(" -- ")) if isinstance(x, str) else 0)
-            st.write("Hobby Diversity Score:")
-            st.write(df[["Nome", "Hobby", "Hobby Count"]])
+    # Hobby più Popolari
+    elif menu == "Hobby più Popolari":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Hobby più Popolari")
+            hobby_list = df["Hobby"].dropna().str.split(" -- ").explode()
+            hobby_count = hobby_list.value_counts().reset_index()
+            hobby_count.columns = ["Hobby", "Frequenza"]
+            fig = px.bar(hobby_count, x="Hobby", y="Frequenza", title="Hobby più Popolari")
+            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.subheader("Descrizione")
+            st.write("""
+                Questo grafico mostra gli hobby più comuni tra i partecipanti.
+                È utile per identificare gli interessi principali del gruppo.
+            """)
 
-        # Visualization of custom metrics
-        fig = px.histogram(
-            df,
-            x="Normalized Soddisfazione" if "Normalized Soddisfazione" in df.columns else None,
-            title="Distribution of Normalized Satisfaction",
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    # Grafico Personalizzato
+    elif menu == "Grafico Personalizzato":
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Grafico Personalizzato")
+            columns = list(df.columns)
+            x_axis = st.selectbox("Seleziona l'asse X", columns)
+            y_axis = st.selectbox("Seleziona l'asse Y", columns)
+            chart_type = st.selectbox("Seleziona il tipo di grafico", ["Bar", "Scatter", "Line"])
+
+            if st.button("Genera Grafico"):
+                if chart_type == "Bar":
+                    fig = px.bar(df, x=x_axis, y=y_axis, title=f"Grafico Bar: {x_axis} vs {y_axis}")
+                elif chart_type == "Scatter":
+                    fig = px.scatter(df, x=x_axis, y=y_axis, title=f"Grafico Scatter: {x_axis} vs {y_axis}")
+                elif chart_type == "Line":
+                    fig = px.line(df, x=x_axis, y=y_axis, title=f"Grafico Linea: {x_axis} vs {y_axis}")
+                st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.subheader("Descrizione")
+            st.write("""
+                Questo grafico ti consente di scegliere le variabili da visualizzare.
+                Puoi selezionare l'asse X, l'asse Y e il tipo di grafico (Bar, Scatter o Line).
+            """)
+
 
