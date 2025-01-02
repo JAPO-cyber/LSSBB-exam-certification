@@ -62,39 +62,45 @@ else:
                     for place in places_data["results"]:
                         # Dettagli aggiuntivi tramite Place Details API
                         place_id = place.get("place_id")
-                        details_url = (
-                            f"https://maps.googleapis.com/maps/api/place/details/json?"
-                            f"place_id={place_id}&fields=name,formatted_address,geometry,formatted_phone_number,email&key={api_key}"
-                        )
-                        details_response = requests.get(details_url)
-                        details_response.raise_for_status()
-                        details_data = details_response.json().get("result", {})
+                        if place_id:
+                            details_url = (
+                                f"https://maps.googleapis.com/maps/api/place/details/json?"
+                                f"place_id={place_id}&fields=name,formatted_address,geometry,formatted_phone_number,email&key={api_key}"
+                            )
+                            details_response = requests.get(details_url)
+                            details_response.raise_for_status()
+                            details_data = details_response.json().get("result", {})
 
-                        results.append({
-                            "Nome": details_data.get("name", "Senza Nome"),
-                            "Indirizzo": details_data.get("formatted_address", "Indirizzo non disponibile"),
-                            "Telefono": details_data.get("formatted_phone_number", "Non disponibile"),
-                            "Email": details_data.get("email", "Non disponibile"),
-                            "Latitudine": details_data.get("geometry", {}).get("location", {}).get("lat", ""),
-                            "Longitudine": details_data.get("geometry", {}).get("location", {}).get("lng", "")
-                        })
+                            results.append({
+                                "Nome": details_data.get("name", "Senza Nome"),
+                                "Indirizzo": details_data.get("formatted_address", "Indirizzo non disponibile"),
+                                "Telefono": details_data.get("formatted_phone_number", "Non disponibile"),
+                                "Email": details_data.get("email", "Non disponibile"),
+                                "Latitudine": details_data.get("geometry", {}).get("location", {}).get("lat", ""),
+                                "Longitudine": details_data.get("geometry", {}).get("location", {}).get("lng", "")
+                            })
 
-                    df = pd.DataFrame(results)
+                    # Verifica se ci sono risultati
+                    if not results:
+                        st.warning("Non è stato possibile recuperare dettagli per le aziende trovate.")
+                    else:
+                        df = pd.DataFrame(results)
 
-                    # Salva i dati nel session state
-                    st.session_state.df_data = df
+                        # Salva i dati nel session state
+                        st.session_state.df_data = df
 
-                    # Crea la mappa
-                    m = folium.Map(location=[lat, lng], zoom_start=12)
-                    for _, row in df.iterrows():
-                        folium.Marker(
-                            location=[row["Latitudine"], row["Longitudine"]],
-                            popup=f"{row['Nome']}\n{row['Indirizzo']}\nTelefono: {row['Telefono']}\nEmail: {row['Email']}",
-                            icon=folium.Icon(color="blue", icon="info-sign")
-                        ).add_to(m)
+                        # Crea la mappa
+                        m = folium.Map(location=[lat, lng], zoom_start=12)
+                        for _, row in df.iterrows():
+                            if pd.notna(row["Latitudine"]) and pd.notna(row["Longitudine"]):
+                                folium.Marker(
+                                    location=[row["Latitudine"], row["Longitudine"]],
+                                    popup=f"{row['Nome']}\n{row['Indirizzo']}\nTelefono: {row['Telefono']}\nEmail: {row['Email']}",
+                                    icon=folium.Icon(color="blue", icon="info-sign")
+                                ).add_to(m)
 
-                    # Salva la mappa nel session state
-                    st.session_state.map_data = m
+                        # Salva la mappa nel session state
+                        st.session_state.map_data = m
 
         except requests.exceptions.RequestException as e:
             st.error(f"Errore durante la richiesta API: {e}")
@@ -107,4 +113,3 @@ if st.session_state.df_data is not None:
 
 if st.session_state.map_data is not None:
     st_folium(st.session_state.map_data, width=700, height=500)
-
