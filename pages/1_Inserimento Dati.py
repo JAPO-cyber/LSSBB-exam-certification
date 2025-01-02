@@ -13,7 +13,10 @@ if not os.path.exists(folder_path):
 # Funzione per caricare i dati
 def load_data():
     if os.path.exists(file_path):
-        return pd.read_csv(file_path)
+        df = pd.read_csv(file_path)
+        if "Fermi" not in df.columns:
+            df["Fermi"] = ""  # Inizializza la colonna "Fermi" se non esiste
+        return df
     else:
         return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi"])
 
@@ -33,11 +36,9 @@ tabs = st.tabs(["Nuovo Dato", "Modifica Dati"])
 with tabs[0]:
     st.title("Inserimento Nuovo Dato")
 
-    # Inizializzazione dinamica per i fermi
     if "fermi" not in st.session_state:
         st.session_state.fermi = []
 
-    # Dividi la pagina in due colonne
     col1, col2 = st.columns(2)
 
     with col1:
@@ -52,25 +53,24 @@ with tabs[0]:
 
     with col2:
         st.subheader("Fermi Dinamici")
-        # Pulsanti per aggiungere o rimuovere fermi
-        add_button = st.button("Aggiungi Fermo")
-        remove_button = st.button("Rimuovi Fermo")
+        col3, col4 = st.columns(2)
+        with col3:
+            add_button = st.button("Aggiungi Fermo")
+        with col4:
+            remove_button = st.button("Rimuovi Fermo")
 
         if add_button:
             st.session_state.fermi.append("")
         if remove_button and len(st.session_state.fermi) > 0:
             st.session_state.fermi.pop()
 
-        # Visualizzazione campi dinamici
         for i in range(len(st.session_state.fermi)):
             st.session_state.fermi[i] = st.text_input(f"Fermo {i+1}", value=st.session_state.fermi[i], key=f"fermo_{i}")
 
-    # Form per confermare l'invio
     with st.form("complete_form"):
         conferma = st.checkbox("Confermi che i dati inseriti sono corretti?")
         submit_button = st.form_submit_button("Invia")
 
-    # Elaborazione dei dati
     if submit_button:
         if conferma:
             df_new = pd.DataFrame([{
@@ -97,7 +97,6 @@ with tabs[0]:
 with tabs[1]:
     st.title("Modifica Dati")
 
-    # Caricamento dei dati esistenti
     df = load_data()
     if df.empty:
         st.warning("Non ci sono dati disponibili per la modifica.")
@@ -105,12 +104,10 @@ with tabs[1]:
         st.write("Dati attualmente salvati:")
         st.dataframe(df)
 
-        # Selezione riga da modificare
         row_index = st.number_input("Seleziona la riga da modificare (0 per la prima)", min_value=0, max_value=len(df)-1, step=1)
         st.write("Riga selezionata:")
         st.write(df.iloc[row_index])
 
-        # Modifica dei dati
         with st.form("edit_form"):
             nome = st.text_input("Nome", df.iloc[row_index]["Nome"])
             età = st.number_input("Età", min_value=0, step=1, value=int(df.iloc[row_index]["Età"]))
@@ -119,10 +116,15 @@ with tabs[1]:
             genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"], index=["Maschio", "Femmina", "Altro"].index(df.iloc[row_index]["Genere"]))
             hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"], default=df.iloc[row_index]["Hobby"].split(", "))
             soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10, value=int(df.iloc[row_index]["Soddisfazione"]))
-            fermi = st.text_area("Fermi (separati da virgola)", value=df.iloc[row_index]["Fermi"])
+            
+            # Gestione valori mancanti nella colonna "Fermi"
+            fermi = df.iloc[row_index].get("Fermi", "")
+            if pd.isna(fermi):
+                fermi = ""
+            fermi = st.text_area("Fermi (separati da virgola)", value=fermi)
+
             save_button = st.form_submit_button("Salva Modifiche")
 
-        # Salvataggio delle modifiche
         if save_button:
             df.at[row_index, "Nome"] = nome
             df.at[row_index, "Età"] = età
@@ -136,4 +138,5 @@ with tabs[1]:
             save_data(df)
             st.success("Modifiche salvate con successo!")
             st.dataframe(df)
+
 
