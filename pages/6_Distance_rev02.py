@@ -64,26 +64,26 @@ else:
                         # Creazione di un DataFrame per i risultati
                         results = []
                         for place in places_data["results"]:
-                            # Dettagli aggiuntivi tramite Place Details API
-                            place_id = place.get("place_id")
-                            details_url = (
-                                f"https://maps.googleapis.com/maps/api/place/details/json?"
-                                f"place_id={place_id}&fields=name,formatted_address,geometry&key={api_key}"
-                            )
-                            details_response = requests.get(details_url)
-                            details_response.raise_for_status()
-                            details_data = details_response.json().get("result", {})
+                            place_name = place.get("name", "Senza Nome")
+                            place_address = place.get("vicinity", "Indirizzo non disponibile")
+                            place_location = place.get("geometry", {}).get("location", {})
+                            lat_detail = place_location.get("lat")
+                            lng_detail = place_location.get("lng")
+                            place_rating = place.get("rating", "Non disponibile")
+                            place_user_ratings_total = place.get("user_ratings_total", "Non disponibile")
+                            place_types = ", ".join(place.get("types", []))
+                            place_business_status = place.get("business_status", "Non disponibile")
 
-                            lat_detail = details_data.get("geometry", {}).get("location", {}).get("lat", None)
-                            lng_detail = details_data.get("geometry", {}).get("location", {}).get("lng", None)
-
-                            if lat_detail is not None and lng_detail is not None:
-                                results.append({
-                                    "Nome": details_data.get("name", "Senza Nome"),
-                                    "Indirizzo": details_data.get("formatted_address", "Indirizzo non disponibile"),
-                                    "Latitudine": lat_detail,
-                                    "Longitudine": lng_detail
-                                })
+                            results.append({
+                                "Nome": place_name,
+                                "Indirizzo": place_address,
+                                "Latitudine": lat_detail,
+                                "Longitudine": lng_detail,
+                                "Valutazione": place_rating,
+                                "Numero recensioni": place_user_ratings_total,
+                                "Tipologie": place_types,
+                                "Stato attività": place_business_status
+                            })
 
                         if results:
                             df = pd.DataFrame(results)
@@ -96,7 +96,13 @@ else:
                             for _, row in df.iterrows():
                                 folium.Marker(
                                     location=[row["Latitudine"], row["Longitudine"]],
-                                    popup=f"{row['Nome']}\n{row['Indirizzo']}",
+                                    popup=(
+                                        f"{row['Nome']}\n{row['Indirizzo']}\n"
+                                        f"Valutazione: {row['Valutazione']}\n"
+                                        f"Numero recensioni: {row['Numero recensioni']}\n"
+                                        f"Tipologie: {row['Tipologie']}\n"
+                                        f"Stato attività: {row['Stato attività']}"
+                                    ),
                                     icon=folium.Icon(color="blue", icon="info-sign")
                                 ).add_to(m)
 
@@ -116,6 +122,4 @@ if st.session_state.df_data is not None:
 
 if st.session_state.map_data is not None:
     st_folium(st.session_state.map_data, width=700, height=500)
-
-
 
