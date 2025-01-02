@@ -66,36 +66,41 @@ else:
                         for place in places_data["results"]:
                             place_id = place.get("place_id")
                             if place_id:
+                                # Richiedi dettagli aggiuntivi tramite Place Details API
                                 details_url = (
                                     f"https://maps.googleapis.com/maps/api/place/details/json?"
-                                    f"place_id={place_id}&fields=name,formatted_address,geometry,formatted_phone_number,website,email,rating,user_ratings_total,types,business_status,price_level,opening_hours&key={api_key}"
+                                    f"place_id={place_id}&fields=name,formatted_address,geometry,"
+                                    f"formatted_phone_number,website,email,rating,user_ratings_total,types,business_status&key={api_key}"
                                 )
                                 details_response = requests.get(details_url)
                                 details_response.raise_for_status()
                                 details_data = details_response.json().get("result", {})
 
-                                # Debug dei dati ricevuti
-                                st.write(f"Dettagli per Place ID {place_id}:", details_data)
-
+                                place_name = details_data.get("name", "Senza Nome")
+                                place_address = details_data.get("formatted_address", "Indirizzo non disponibile")
                                 lat_detail = details_data.get("geometry", {}).get("location", {}).get("lat")
                                 lng_detail = details_data.get("geometry", {}).get("location", {}).get("lng")
+                                place_rating = details_data.get("rating", "Non disponibile")
+                                place_user_ratings_total = details_data.get("user_ratings_total", "Non disponibile")
+                                place_types = ", ".join(details_data.get("types", []))
+                                place_business_status = details_data.get("business_status", "Non disponibile")
+                                place_phone = details_data.get("formatted_phone_number", "Non disponibile")
+                                place_website = details_data.get("website", "Non disponibile")
+                                place_email = details_data.get("email", "Non disponibile")
 
-                                if lat_detail is not None and lng_detail is not None:
-                                    results.append({
-                                        "Nome": details_data.get("name", "Senza Nome"),
-                                        "Indirizzo": details_data.get("formatted_address", "Indirizzo non disponibile"),
-                                        "Latitudine": lat_detail,
-                                        "Longitudine": lng_detail,
-                                        "Telefono": details_data.get("formatted_phone_number", "Non disponibile"),
-                                        "Sito web": details_data.get("website", "Non disponibile"),
-                                        "Email": details_data.get("email", "Non disponibile"),
-                                        "Valutazione": details_data.get("rating", "Non disponibile"),
-                                        "Numero recensioni": details_data.get("user_ratings_total", "Non disponibile"),
-                                        "Tipologie": ", ".join(details_data.get("types", [])),
-                                        "Stato attività": details_data.get("business_status", "Non disponibile"),
-                                        "Prezzo": details_data.get("price_level", "Non disponibile"),
-                                        "Orari di apertura": details_data.get("opening_hours", {}).get("weekday_text", "Non disponibile")
-                                    })
+                                results.append({
+                                    "Nome": place_name,
+                                    "Indirizzo": place_address,
+                                    "Latitudine": lat_detail,
+                                    "Longitudine": lng_detail,
+                                    "Valutazione": place_rating,
+                                    "Numero recensioni": place_user_ratings_total,
+                                    "Tipologie": place_types,
+                                    "Stato attività": place_business_status,
+                                    "Telefono": place_phone,
+                                    "Sito web": place_website,
+                                    "Email": place_email
+                                })
 
                         if results:
                             df = pd.DataFrame(results)
@@ -110,13 +115,13 @@ else:
                                     location=[row["Latitudine"], row["Longitudine"]],
                                     popup=(
                                         f"{row['Nome']}\n{row['Indirizzo']}\n"
-                                        f"Telefono: {row['Telefono']}\nSito web: {row['Sito web']}\n"
-                                        f"Email: {row['Email']}\nValutazione: {row['Valutazione']}\n"
+                                        f"Valutazione: {row['Valutazione']}\n"
                                         f"Numero recensioni: {row['Numero recensioni']}\n"
                                         f"Tipologie: {row['Tipologie']}\n"
                                         f"Stato attività: {row['Stato attività']}\n"
-                                        f"Prezzo: {row['Prezzo']}\n"
-                                        f"Orari di apertura: {row['Orari di apertura']}"
+                                        f"Telefono: {row['Telefono']}\n"
+                                        f"Sito web: {row['Sito web']}\n"
+                                        f"Email: {row['Email']}"
                                     ),
                                     icon=folium.Icon(color="blue", icon="info-sign")
                                 ).add_to(m)
@@ -137,4 +142,5 @@ if st.session_state.df_data is not None:
 
 if st.session_state.map_data is not None:
     st_folium(st.session_state.map_data, width=700, height=500)
+
 
