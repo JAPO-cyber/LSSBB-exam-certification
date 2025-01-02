@@ -70,12 +70,29 @@ else:
                             lat_detail = place_location.get("lat")
                             lng_detail = place_location.get("lng")
 
+                            # Ottieni dettagli aggiuntivi (numero di telefono, email)
+                            place_id = place.get("place_id")
+                            phone_number = "Non disponibile"
+                            email = "Non disponibile"
+                            if place_id:
+                                details_url = (
+                                    f"https://maps.googleapis.com/maps/api/place/details/json?"
+                                    f"place_id={place_id}&fields=formatted_phone_number,email&key={api_key}"
+                                )
+                                details_response = requests.get(details_url)
+                                details_response.raise_for_status()
+                                details_data = details_response.json().get("result", {})
+                                phone_number = details_data.get("formatted_phone_number", "Non disponibile")
+                                email = details_data.get("email", "Non disponibile")
+
                             if lat_detail is not None and lng_detail is not None:
                                 results.append({
                                     "Nome": place_name,
                                     "Indirizzo": place_address,
                                     "Latitudine": lat_detail,
-                                    "Longitudine": lng_detail
+                                    "Longitudine": lng_detail,
+                                    "Telefono": phone_number,
+                                    "Email": email
                                 })
 
                         if results:
@@ -109,4 +126,5 @@ if st.session_state.df_data is not None:
 
 if st.session_state.map_data is not None:
     st_folium(st.session_state.map_data, width=700, height=500)
+
 
