@@ -2,8 +2,6 @@ import streamlit as st
 import requests
 import folium
 from streamlit_folium import st_folium
-from ortools.constraint_solver import routing_enums_pb2
-from ortools.constraint_solver import pywrapcp
 
 # Configurazione dell'app
 st.set_page_config(page_title="Route Optimization Demo", layout="wide")
@@ -32,8 +30,11 @@ else:
             geocode_response.raise_for_status()
             geocode_data = geocode_response.json()
 
+            # Debug: Mostra i dati ricevuti dalla Geocoding API
+            st.write("Risultati della Geocoding API:", geocode_data)
+
             if not geocode_data.get("results"):
-                st.error("Errore: Impossibile trovare le coordinate della posizione di partenza.")
+                st.error("Errore: Impossibile trovare le coordinate della posizione di partenza. Verifica l'indirizzo.")
             else:
                 coordinates = geocode_data["results"][0]["geometry"]["location"]
                 lat, lng = coordinates["lat"], coordinates["lng"]
@@ -46,6 +47,9 @@ else:
                 places_response = requests.get(places_url)
                 places_response.raise_for_status()
                 places_data = places_response.json()
+
+                # Debug: Mostra i dati ricevuti dalla Places API
+                st.write("Risultati della Places API:", places_data)
 
                 if not places_data.get("results"):
                     st.warning("Nessuna azienda trovata nel raggio selezionato.")
@@ -70,4 +74,5 @@ else:
             st.error(f"Errore durante la richiesta API: {e}")
         except Exception as e:
             st.error(f"Errore durante l'elaborazione: {e}")
+
 
