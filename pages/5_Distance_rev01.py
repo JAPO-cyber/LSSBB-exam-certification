@@ -40,7 +40,9 @@ else:
                 response.raise_for_status()
                 response_data = response.json()
 
-                if response_data.get("rows"):
+                if not response_data.get("rows"):
+                    st.error("Errore nel calcolo della matrice di distanze.")
+                else:
                     # Costruzione della matrice di distanze
                     distance_matrix = []
                     for row in response_data["rows"]:
@@ -84,69 +86,66 @@ else:
                     solution = routing.SolveWithParameters(search_parameters)
                     if not solution:
                         st.error("Errore nell'ottimizzazione del percorso.")
-                        return
-
-                    # Estrazione del percorso
-                    route = []
-                    index = routing.Start(0)
-                    while not routing.IsEnd(index):
+                    else:
+                        # Estrazione del percorso
+                        route = []
+                        index = routing.Start(0)
+                        while not routing.IsEnd(index):
+                            route.append(manager.IndexToNode(index))
+                            index = solution.Value(routing.NextVar(index))
                         route.append(manager.IndexToNode(index))
-                        index = solution.Value(routing.NextVar(index))
-                    route.append(manager.IndexToNode(index))
 
-                    st.write("Percorso ottimizzato:")
-                    for idx in route:
-                        if idx < len(addresses_list):
-                            st.write(f"- {addresses_list[idx]}")
+                        st.write("Percorso ottimizzato:")
+                        for idx in route:
+                            if idx < len(addresses_list):
+                                st.write(f"- {addresses_list[idx]}")
 
-                    # Step 3: Generazione della mappa
-                    try:
-                        waypoints = "|".join([addresses_list[idx] for idx in route[1:-1]])
-                        url_directions = (
-                            f"https://maps.googleapis.com/maps/api/directions/json?"
-                            f"origin={addresses_list[route[0]]}&destination={addresses_list[route[-1]]}"
-                            f"&waypoints={waypoints}&key={api_key}"
-                        )
-                        response_directions = requests.get(url_directions)
-                        response_directions.raise_for_status()
-                        route_data = response_directions.json()
-
-                        if route_data.get("routes"):
-                            route_info = route_data["routes"][0]
-                            m = folium.Map(
-                                location=[
-                                    route_info["legs"][0]["start_location"]["lat"],
-                                    route_info["legs"][0]["start_location"]["lng"]
-                                ],
-                                zoom_start=6
+                        # Step 3: Generazione della mappa
+                        try:
+                            waypoints = "|".join([addresses_list[idx] for idx in route[1:-1]])
+                            url_directions = (
+                                f"https://maps.googleapis.com/maps/api/directions/json?"
+                                f"origin={addresses_list[route[0]]}&destination={addresses_list[route[-1]]}"
+                                f"&waypoints={waypoints}&key={api_key}"
                             )
+                            response_directions = requests.get(url_directions)
+                            response_directions.raise_for_status()
+                            route_data = response_directions.json()
 
-                            folium.PolyLine(
-                                locations=[
-                                    [step["start_location"]["lat"], step["start_location"]["lng"]]
-                                    for leg in route_info["legs"]
-                                    for step in leg["steps"]
-                                ],
-                                color="blue",
-                                weight=5,
-                                opacity=0.7
-                            ).add_to(m)
+                            if route_data.get("routes"):
+                                route_info = route_data["routes"][0]
+                                m = folium.Map(
+                                    location=[
+                                        route_info["legs"][0]["start_location"]["lat"],
+                                        route_info["legs"][0]["start_location"]["lng"]
+                                    ],
+                                    zoom_start=6
+                                )
 
-                            for idx, leg in enumerate(route_info["legs"]):
-                                if idx + 1 < len(addresses_list):
-                                    folium.Marker(
-                                        location=[leg["end_location"]["lat"], leg["end_location"]["lng"]],
-                                        popup=f"Fermata {idx + 1}: {addresses_list[idx + 1]}",
-                                        icon=folium.Icon(color="green" if idx == len(route_info["legs"]) - 1 else "red")
-                                    ).add_to(m)
+                                folium.PolyLine(
+                                    locations=[
+                                        [step["start_location"]["lat"], step["start_location"]["lng"]]
+                                        for leg in route_info["legs"]
+                                        for step in leg["steps"]
+                                    ],
+                                    color="blue",
+                                    weight=5,
+                                    opacity=0.7
+                                ).add_to(m)
 
-                            st_folium(m, width=700, height=500)
-                        else:
-                            st.error("Errore nella visualizzazione del percorso.")
-                    except Exception as e:
-                        st.error(f"Errore nella generazione della mappa: {e}")
-                else:
-                    st.error("Errore nel calcolo della matrice di distanze.")
+                                for idx, leg in enumerate(route_info["legs"]):
+                                    if idx + 1 < len(addresses_list):
+                                        folium.Marker(
+                                            location=[leg["end_location"]["lat"], leg["end_location"]["lng"]],
+                                            popup=f"Fermata {idx + 1}: {addresses_list[idx + 1]}",
+                                            icon=folium.Icon(color="green" if idx == len(route_info["legs"]) - 1 else "red")
+                                        ).add_to(m)
+
+                                st_folium(m, width=700, height=500)
+                            else:
+                                st.error("Errore nella visualizzazione del percorso.")
+                        except Exception as e:
+                            st.error(f"Errore nella generazione della mappa: {e}")
             except requests.exceptions.RequestException as e:
                 st.error(f"Errore durante la richiesta API: {e}")
             except Exception as e:
