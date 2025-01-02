@@ -130,7 +130,11 @@ with tabs[1]:
                 giorno_val = datetime.today().date()  # Predefinita alla data odierna
             giorno = st.date_input("Giorno", value=giorno_val)
 
-            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(df.iloc[row_index]["Durata"]) if "Durata" in df.columns else 0)
+            # Gestione di "Durata"
+            durata_val = df.iloc[row_index]["Durata"] if "Durata" in df.columns else 0
+            if pd.isna(durata_val):
+                durata_val = 0  # Predefinito a 0 se il valore è mancante
+            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(durata_val))
 
             ora_corrente = df.iloc[row_index]["Ora Orologio"] if "Ora Orologio" in df.columns else "12:00"
             ora_orologio_html = f"""
@@ -176,6 +180,7 @@ with tabs[2]:
             file_name="1_Input Dati.csv",
             mime="text/csv"
         )
+
 
 
 
