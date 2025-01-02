@@ -66,18 +66,17 @@ else:
                         for place in places_data["results"]:
                             place_id = place.get("place_id")
                             if place_id:
-                                # Richiedi dettagli aggiuntivi tramite Place Details API
                                 details_url = (
                                     f"https://maps.googleapis.com/maps/api/place/details/json?"
-                                    f"place_id={place_id}&fields=name,formatted_address,geometry,"
-                                    f"formatted_phone_number,website,email,rating,user_ratings_total,"
-                                    f"types,business_status,price_level,opening_hours&key={api_key}"
+                                    f"place_id={place_id}&fields=name,formatted_address,geometry,formatted_phone_number,website,email,rating,user_ratings_total,types,business_status,price_level,opening_hours&key={api_key}"
                                 )
                                 details_response = requests.get(details_url)
                                 details_response.raise_for_status()
                                 details_data = details_response.json().get("result", {})
 
-                                # Controllo robusto per latitudine e longitudine
+                                # Debug dei dati ricevuti
+                                st.write(f"Dettagli per Place ID {place_id}:", details_data)
+
                                 lat_detail = details_data.get("geometry", {}).get("location", {}).get("lat")
                                 lng_detail = details_data.get("geometry", {}).get("location", {}).get("lng")
 
@@ -138,3 +137,4 @@ if st.session_state.df_data is not None:
 
 if st.session_state.map_data is not None:
     st_folium(st.session_state.map_data, width=700, height=500)
+
