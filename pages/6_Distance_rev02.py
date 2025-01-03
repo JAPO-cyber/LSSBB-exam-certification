@@ -4,11 +4,8 @@ import folium
 import pandas as pd
 from streamlit_folium import st_folium
 
-# Configurazione dell'app
-st.set_page_config(page_title="Route Optimization Demo", layout="wide")
-
 # Header principale
-st.title("Route Optimization con OR-Tools e Google Maps API")
+st.title("Ricerca potenziali clienti su google")
 
 # Input della chiave API
 st.sidebar.header("Configurazione API")
@@ -21,7 +18,7 @@ if "df_data" not in st.session_state:
     st.session_state.df_data = None
 
 # Tab 11: Ricerca Aziende
-st.header("Scheda 11: Ricerca Aziende")
+st.header("impresa edile, elettricista, idraulico, manutenzione industriale, ristrutturazione casa, cartelloni pubblicitari, pulizia vetri industriali, installazione solare, eventi allestimenti palchi")
 if not api_key:
     st.warning("Inserisci la tua API Key per utilizzare la funzionalità.")
 else:
