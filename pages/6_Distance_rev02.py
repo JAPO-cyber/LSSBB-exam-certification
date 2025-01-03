@@ -66,12 +66,16 @@ else:
                         for place in places_data["results"]:
                             place_name = place.get("name", "Senza Nome")
                             place_address = place.get("vicinity", "Indirizzo non disponibile")
+                            place_location = place.get("geometry", {}).get("location", {})
+                            lat_detail = place_location.get("lat")
+                            lng_detail = place_location.get("lng")
+
+                            # Ottieni dettagli aggiuntivi (numero di telefono, sito web, ecc.)
                             place_id = place.get("place_id")
                             phone_number = "Non disponibile"
                             international_phone_number = "Non disponibile"
                             website = "Non disponibile"
 
-                            # Ottieni dettagli aggiuntivi (numero di telefono, sito web, ecc.)
                             if place_id:
                                 details_url = (
                                     f"https://maps.googleapis.com/maps/api/place/details/json?"
@@ -90,7 +94,9 @@ else:
                                 "Indirizzo": place_address,
                                 "Telefono": phone_number,
                                 "Telefono Internazionale": international_phone_number,
-                                "Sito Web": website
+                                "Sito Web": website,
+                                "Latitudine": lat_detail,
+                                "Longitudine": lng_detail
                             })
 
                         if results:
@@ -99,15 +105,30 @@ else:
                             # Salva i dati nel session state
                             st.session_state.df_data = df
 
-                            # Mostra i risultati nel dataframe
-                            st.dataframe(df)
+                            # Crea la mappa
+                            m = folium.Map(location=[lat, lng], zoom_start=12)
+                            for _, row in df.iterrows():
+                                folium.Marker(
+                                    location=[row["Latitudine"], row["Longitudine"]],
+                                    popup=f"{row['Nome']}\n{row['Indirizzo']}\n{row['Telefono']}",
+                                    icon=folium.Icon(color="blue", icon="info-sign")
+                                ).add_to(m)
+
+                            # Salva la mappa nel session state
+                            st.session_state.map_data = m
+
+                        else:
+                            st.warning("Non è stato possibile recuperare dettagli validi per le aziende trovate.")
 
         except requests.exceptions.RequestException as e:
             st.error(f"Errore durante la richiesta API: {e}")
         except Exception as e:
             st.error(f"Errore durante l'elaborazione: {e}")
 
-# Mostra i risultati salvati nel session state
+# Mostra i risultati e la mappa
 if st.session_state.df_data is not None:
     st.dataframe(st.session_state.df_data)
+
+if st.session_state.map_data is not None:
+    st_folium(st.session_state.map_data, width=700, height=500)
 
