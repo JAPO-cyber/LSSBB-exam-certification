@@ -18,7 +18,7 @@ if not api_key:
     st.warning("Inserisci la tua API Key per utilizzare le funzionalità.")
 else:
     # Tabs per gli esempi
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10, tab11 = st.tabs([
         "Calcolo Spese di Spedizione",
         "Ottimizzazione Percorsi",
         "Monitoraggio Tempo Reale",
