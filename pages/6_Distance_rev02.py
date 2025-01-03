@@ -67,48 +67,47 @@ else:
                             place_name = place.get("name", "Senza Nome")
                             place_address = place.get("vicinity", "Indirizzo non disponibile")
                             place_id = place.get("place_id")
-                            results.append({
-                                "Nome": place_name,
-                                "Indirizzo": place_address,
-                                "Place ID": place_id
-                            })
+                            phone_number = "Non disponibile"
+                            international_phone_number = "Non disponibile"
+                            website = "Non disponibile"
 
-                        if results:
-                            df = pd.DataFrame(results)
-                            st.session_state.df_data = df
-
-                            # Mostra i risultati nella tabella
-                            st.dataframe(df)
-
-                            # Seleziona un'azienda per maggiori dettagli
-                            selected_place = st.selectbox(
-                                "Seleziona un'azienda per vedere i dettagli",
-                                df["Nome"]
-                            )
-
-                            # Mostra i dettagli dell'azienda selezionata
-                            if selected_place:
-                                selected_place_id = df.loc[df["Nome"] == selected_place, "Place ID"].values[0]
+                            # Ottieni dettagli aggiuntivi (numero di telefono, sito web, ecc.)
+                            if place_id:
                                 details_url = (
                                     f"https://maps.googleapis.com/maps/api/place/details/json?"
-                                    f"place_id={selected_place_id}&fields=name,formatted_address,"
+                                    f"place_id={place_id}&fields=name,formatted_address,"
                                     f"formatted_phone_number,international_phone_number,website&key={api_key}"
                                 )
                                 details_response = requests.get(details_url)
                                 details_response.raise_for_status()
                                 details_data = details_response.json().get("result", {})
-                                st.subheader("Dettagli Azienda Selezionata:")
-                                st.write(f"**Nome:** {details_data.get('name', 'Non disponibile')}")
-                                st.write(f"**Indirizzo:** {details_data.get('formatted_address', 'Non disponibile')}")
-                                st.write(f"**Telefono:** {details_data.get('formatted_phone_number', 'Non disponibile')}")
-                                st.write(f"**Telefono Internazionale:** {details_data.get('international_phone_number', 'Non disponibile')}")
-                                st.write(f"**Sito Web:** {details_data.get('website', 'Non disponibile')}")
+                                phone_number = details_data.get("formatted_phone_number", "Non disponibile")
+                                international_phone_number = details_data.get("international_phone_number", "Non disponibile")
+                                website = details_data.get("website", "Non disponibile")
+
+                            results.append({
+                                "Nome": place_name,
+                                "Indirizzo": place_address,
+                                "Telefono": phone_number,
+                                "Telefono Internazionale": international_phone_number,
+                                "Sito Web": website
+                            })
+
+                        if results:
+                            df = pd.DataFrame(results)
+
+                            # Salva i dati nel session state
+                            st.session_state.df_data = df
+
+                            # Mostra i risultati nel dataframe
+                            st.dataframe(df)
 
         except requests.exceptions.RequestException as e:
             st.error(f"Errore durante la richiesta API: {e}")
         except Exception as e:
             st.error(f"Errore durante l'elaborazione: {e}")
 
-
-
+# Mostra i risultati salvati nel session state
+if st.session_state.df_data is not None:
+    st.dataframe(st.session_state.df_data)
 
