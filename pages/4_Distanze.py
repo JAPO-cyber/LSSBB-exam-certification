@@ -220,54 +220,57 @@ else:
                     
     # Tab 11: Percorso su mappa
     with tab11:
-        st.header("Movimentazione del Mezzo su Mappa")
+    st.header("Movimentazione del Mezzo su Mappa")
     
-        # Input per inserire una serie di indirizzi
-        addresses_input = st.text_area(
-            "Inserisci gli indirizzi separati da una nuova riga:",
-            placeholder="Indirizzo 1\nIndirizzo 2\nIndirizzo 3",
-        )
+    # Input per inserire una serie di indirizzi
+    addresses_input = st.text_area(
+        "Inserisci gli indirizzi separati da una nuova riga:",
+        placeholder="Indirizzo 1\nIndirizzo 2\nIndirizzo 3",
+    )
     
-        if st.button("Mostra Movimentazione", key="show_route"):
-            # Suddividi gli indirizzi in una lista, ignorando righe vuote
-            addresses = [address.strip() for address in addresses_input.split("\n") if address.strip()]
-    
-            if not addresses:
-                st.error("Inserisci almeno un indirizzo valido.")
+    if st.button("Mostra Movimentazione", key="show_route"):
+        # Suddividi gli indirizzi in una lista, ignorando righe vuote
+        addresses = [address.strip() for address in addresses_input.split("\n") if address.strip()]
+        
+        if not addresses:
+            st.error("Inserisci almeno un indirizzo valido.")
+        else:
+            # Lista per memorizzare le coordinate geografiche
+            locations = []
+
+            for address in addresses:
+                try:
+                    # URL per la geocodifica
+                    geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
+                    response = requests.get(geocode_url)
+                    response.raise_for_status()
+                    geocode_data = response.json()
+
+                    if geocode_data["status"] == "OK":
+                        location = geocode_data["results"][0]["geometry"]["location"]
+                        locations.append((location["lat"], location["lng"]))
+                    else:
+                        st.warning(f"Indirizzo non trovato o errore: {address} ({geocode_data.get('status')})")
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Errore durante la richiesta API per {address}: {e}")
+
+            if not locations:
+                st.error("Nessuna posizione valida trovata.")
             else:
-                
-                for address in addresses:
-                    try:
-                        geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
-                        response = requests.get(geocode_url)
-                        response.raise_for_status()
-                        geocode_data = response.json()
-    
-                        if geocode_data["status"] == "OK":
-                            location = geocode_data["results"][0]["geometry"]["location"]
-                            locations.append((location["lat"], location["lng"]))
-                        else:
-                            st.warning(f"Indirizzo non trovato o errore: {address}")
-                    except requests.exceptions.RequestException as e:
-                        st.error(f"Errore durante la richiesta API: {e}")
-    
-                if not locations:
-                    st.error("Nessuna posizione valida trovata.")
-                else:
-                    # Creazione della mappa
-                    start_location = locations[0]  # Punto di partenza
-                    route_map = folium.Map(location=start_location, zoom_start=13)
-    
-                    # Aggiungi i marker e la rotta
-                    for i, coord in enumerate(locations):
-                        folium.Marker(
-                            location=coord,
-                            popup=f"Step {i + 1}: {addresses[i]}",
-                            icon=folium.Icon(color="blue", icon="info-sign"),
-                        ).add_to(route_map)
-    
-                    # Disegna la rotta
-                    folium.PolyLine(locations, color="blue", weight=2.5, opacity=1).add_to(route_map)
-    
-                    # Mostra la mappa
-                    st_folium(route_map, width=800, height=600)
+                # Creazione della mappa
+                start_location = locations[0]  # Punto di partenza
+                route_map = folium.Map(location=start_location, zoom_start=13)
+
+                # Aggiungi i marker e la rotta
+                for i, coord in enumerate(locations):
+                    folium.Marker(
+                        location=coord,
+                        popup=f"Step {i + 1}: {addresses[i]}",
+                        icon=folium.Icon(color="blue", icon="info-sign"),
+                    ).add_to(route_map)
+
+                # Disegna la rotta
+                folium.PolyLine(locations, color="blue", weight=2.5, opacity=1).add_to(route_map)
+
+                # Mostra la mappa
+                st_folium(route_map, width=800, height=600)
