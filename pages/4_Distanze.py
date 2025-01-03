@@ -235,10 +235,7 @@ else:
             if not addresses:
                 st.error("Inserisci almeno un indirizzo valido.")
             else:
-                # Geocodifica gli indirizzi con Google Maps API
-                api_key = st.secrets["google_api"]["api_key"]  # Assicurati di aver configurato st.secrets
-                locations = []
-    
+                
                 for address in addresses:
                     try:
                         geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
