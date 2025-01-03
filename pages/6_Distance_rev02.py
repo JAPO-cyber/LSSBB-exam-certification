@@ -66,66 +66,49 @@ else:
                         for place in places_data["results"]:
                             place_name = place.get("name", "Senza Nome")
                             place_address = place.get("vicinity", "Indirizzo non disponibile")
-                            place_location = place.get("geometry", {}).get("location", {})
-                            lat_detail = place_location.get("lat")
-                            lng_detail = place_location.get("lng")
-
-                            # Ottieni dettagli aggiuntivi (numero di telefono, email)
                             place_id = place.get("place_id")
-                            phone_number = "Non disponibile"
-                            email = "Non disponibile"
-                            if place_id:
+                            results.append({
+                                "Nome": place_name,
+                                "Indirizzo": place_address,
+                                "Place ID": place_id
+                            })
+
+                        if results:
+                            df = pd.DataFrame(results)
+                            st.session_state.df_data = df
+
+                            # Mostra i risultati nella tabella
+                            st.dataframe(df)
+
+                            # Seleziona un'azienda per maggiori dettagli
+                            selected_place = st.selectbox(
+                                "Seleziona un'azienda per vedere i dettagli",
+                                df["Nome"]
+                            )
+
+                            # Mostra i dettagli dell'azienda selezionata
+                            if selected_place:
+                                selected_place_id = df.loc[df["Nome"] == selected_place, "Place ID"].values[0]
                                 details_url = (
                                     f"https://maps.googleapis.com/maps/api/place/details/json?"
-                                    f"place_id={place_id}&fields=formatted_phone_number,email&key={api_key}"
+                                    f"place_id={selected_place_id}&fields=name,formatted_address,"
+                                    f"formatted_phone_number,international_phone_number,website&key={api_key}"
                                 )
                                 details_response = requests.get(details_url)
                                 details_response.raise_for_status()
                                 details_data = details_response.json().get("result", {})
-                                phone_number = details_data.get("formatted_phone_number", "Non disponibile")
-                                email = details_data.get("email", "Non disponibile")
-
-                            if lat_detail is not None and lng_detail is not None:
-                                results.append({
-                                    "Nome": place_name,
-                                    "Indirizzo": place_address,
-                                    "Latitudine": lat_detail,
-                                    "Longitudine": lng_detail,
-                                    "Telefono": phone_number,
-                                    "Email": email
-                                })
-
-                        if results:
-                            df = pd.DataFrame(results)
-
-                            # Salva i dati nel session state
-                            st.session_state.df_data = df
-
-                            # Crea la mappa
-                            m = folium.Map(location=[lat, lng], zoom_start=12)
-                            for _, row in df.iterrows():
-                                folium.Marker(
-                                    location=[row["Latitudine"], row["Longitudine"]],
-                                    popup=f"{row['Nome']}\n{row['Indirizzo']}",
-                                    icon=folium.Icon(color="blue", icon="info-sign")
-                                ).add_to(m)
-
-                            # Salva la mappa nel session state
-                            st.session_state.map_data = m
-                        else:
-                            st.warning("Non è stato possibile recuperare dettagli validi per le aziende trovate.")
+                                st.subheader("Dettagli Azienda Selezionata:")
+                                st.write(f"**Nome:** {details_data.get('name', 'Non disponibile')}")
+                                st.write(f"**Indirizzo:** {details_data.get('formatted_address', 'Non disponibile')}")
+                                st.write(f"**Telefono:** {details_data.get('formatted_phone_number', 'Non disponibile')}")
+                                st.write(f"**Telefono Internazionale:** {details_data.get('international_phone_number', 'Non disponibile')}")
+                                st.write(f"**Sito Web:** {details_data.get('website', 'Non disponibile')}")
 
         except requests.exceptions.RequestException as e:
             st.error(f"Errore durante la richiesta API: {e}")
         except Exception as e:
             st.error(f"Errore durante l'elaborazione: {e}")
 
-# Mostra i risultati salvati nel session state
-if st.session_state.df_data is not None:
-    st.dataframe(st.session_state.df_data)
-
-if st.session_state.map_data is not None:
-    st_folium(st.session_state.map_data, width=700, height=500)
 
 
 
