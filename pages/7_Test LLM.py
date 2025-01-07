@@ -20,3 +20,4 @@ if uploaded_file:
         st.error(f"Errore nel caricamento del file: {e}")
 else:
     st.info("Carica un file Excel per visualizzarne i contenuti.")
+    
