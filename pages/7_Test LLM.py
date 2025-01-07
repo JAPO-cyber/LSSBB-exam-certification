@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# Titolo dell'app
+# Titolo della pagina
 st.title("Caricamento File Excel")
 
 # Step 1: Caricamento del file
