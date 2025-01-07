@@ -1,31 +1,22 @@
 import streamlit as st
 import pandas as pd
 
-# Controlla se l'utente è autenticato
-if "logged_in" in st.session_state and st.session_state.logged_in:
-    # Titolo della pagina
-    st.title("Caricamento File Excel")
+# Caricamento file Excel
+st.title("Caricamento File Excel")
 
-    # Step 1: Caricamento del file
-    uploaded_file = st.file_uploader("Carica un file Excel", type=["xlsx"])
+# Carica il file Excel
+uploaded_file = st.file_uploader("Carica un file Excel", type=["xlsx"])
 
-    if uploaded_file:
-        try:
-            # Lettura del file Excel
-            df = pd.read_excel(uploaded_file, sheet_name=None)
-
-            # Visualizza i fogli disponibili
-            st.sidebar.header("Seleziona un foglio")
-            sheet = st.sidebar.selectbox("Foglio:", list(df.keys()))
-
-            # Visualizzazione dei dati del foglio selezionato
-            st.write(f"### Dati del foglio: {sheet}")
-            st.dataframe(df[sheet])
-
-        except Exception as e:
-            st.error(f"Errore nella lettura del file: {e}")
-    else:
-        st.info("Carica un file Excel per iniziare.")
+if uploaded_file:
+    try:
+        # Leggi il file Excel
+        df = pd.read_excel(uploaded_file, engine="openpyxl")
+        
+        # Mostra il dataframe
+        st.success("File caricato con successo!")
+        st.write("Anteprima dei dati:")
+        st.dataframe(df)
+    except Exception as e:
+        st.error(f"Errore nel caricamento del file: {e}")
 else:
-    # Se non autenticato, mostra un messaggio
-    st.warning("Devi effettuare il login per accedere a questa pagina.")
+    st.info("Carica un file Excel per visualizzarne i contenuti.")
