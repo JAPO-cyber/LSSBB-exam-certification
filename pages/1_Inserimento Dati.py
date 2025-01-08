@@ -1,103 +1,172 @@
 import streamlit as st
 import pandas as pd
+import os
+from datetime import datetime
 
-# Inizializzazione session_state per salvare i dati caricati
-if "data" not in st.session_state:
-    st.session_state.data = []
+# Percorso del file CSV
+file_path = os.path.join("data", "1_Input Dati.csv")
 
-# Tab di navigazione
-tab1, tab2, tab3 = st.tabs(["Carica File", "Indici di Rotazione", "Altro"])
-
-# Tab 1: Caricamento file
-with tab1:
-    st.title("Carica i File Excel")
-
-    # Caricamento file
-    uploaded_files = st.file_uploader("Carica uno o più file Excel", type=["xlsx"], accept_multiple_files=True)
-
-    if uploaded_files:
-        try:
-            combined_data = []
-            for uploaded_file in uploaded_files:
-                # Lettura del file Excel
-                sheets = pd.read_excel(uploaded_file, sheet_name=None)  # Legge tutte le sheet
-                for sheet_name, sheet_data in sheets.items():
-                    sheet_data['File'] = uploaded_file.name  # Aggiunge il nome del file come colonna
-                    sheet_data['Sheet'] = sheet_name  # Aggiunge il nome del foglio come colonna
-                    combined_data.append(sheet_data)
-
-            # Combina tutti i dati in un unico DataFrame
-            combined_df = pd.concat(combined_data, ignore_index=True)
-            st.session_state.data = combined_df
-
-            st.success("File caricati e combinati con successo!")
-
-            # Mostra l'anteprima del file combinato
-            st.write("Anteprima dei dati combinati:")
-            st.dataframe(st.session_state.data.head())
-
-            # Verifica delle colonne richieste
-            required_columns = ["beginning_quantity_2011", "ending_quantity_2011"]
-            missing_columns = [col for col in required_columns if col not in combined_df.columns]
-
-            if missing_columns:
-                st.warning(f"Mancano le seguenti colonne necessarie: {', '.join(missing_columns)}")
-
-                # Opzione per accoppiare le colonne mancanti
-                st.write("Accoppia le colonne del file caricato a quelle richieste:")
-                column_mapping = {}
-                for col in missing_columns:
-                    selected_col = st.selectbox(f"Seleziona una colonna per '{col}'", options=combined_df.columns, key=col)
-                    column_mapping[col] = selected_col
-
-                if st.button("Applica Mappatura"):
-                    for required, actual in column_mapping.items():
-                        combined_df[required] = combined_df[actual]
-                    st.success("Mappatura completata con successo! Tutte le colonne richieste sono ora presenti.")
-
-            else:
-                st.success("Tutte le colonne necessarie sono presenti.")
-
-        except Exception as e:
-            st.error(f"Errore nel caricamento dei file: {e}")
+# Funzione per caricare i dati dal file
+def load_data():
+    if os.path.exists(file_path):
+        return pd.read_csv(file_path)
     else:
-        st.info("Carica uno o più file Excel per iniziare.")
+        st.error(f"Il file {file_path} non esiste. Assicurati che sia presente nella directory specificata.")
+        return pd.DataFrame(columns=["Nome", "Età", "Altezza (cm)", "Descrizione", "Genere", "Hobby", "Soddisfazione", "Fermi", "Giorno", "Durata", "Ora Orologio"])
 
-# Tab 2: Analisi Statistica
-with tab2:
-    if st.session_state.data is None or st.session_state.data.empty:
-        st.warning("Carica prima un file nella tab 'Carica File'.")
+# Funzione per salvare i dati nel file
+def save_data(df):
+    try:
+        df.to_csv(file_path, index=False)
+        st.success(f"File salvato con successo in: {file_path}")
+    except Exception as e:
+        st.error(f"Errore durante il salvataggio del file: {e}")
+
+# Creazione delle schede
+tabs = st.tabs(["Nuovo Dato", "Modifica Dati", "Scarica CSV"])
+
+# Scheda 1: Nuovo Dato
+with tabs[0]:
+    st.title("Inserimento Nuovo Dato")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Dati Tradizionali")
+        nome = st.text_input("Nome", placeholder="Inserisci il tuo nome")
+        età = st.number_input("Età", min_value=0, step=1)
+        altezza = st.number_input("Altezza (in cm)", min_value=0.0, step=0.1)
+        descrizione = st.text_area("Descrizione", placeholder="Scrivi qualcosa di te...")
+        genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"])
+        hobby = st.multiselect("Hobby", ["Sport", "Musica", "Viaggi", "Lettura", "Cucina", "Altro"])
+        soddisfazione = st.slider("Livello di soddisfazione (1-10)", min_value=1, max_value=10)
+
+        # Campo "Giorno" con HTML personalizzato
+        st.subheader("Giorno")
+        giorno_html = f"""
+        <label for="giorno" style="font-size: 16px; color: white;">Seleziona Giorno:</label>
+        <input type="date" id="giorno" value="{datetime.today().strftime('%Y-%m-%d')}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
+        """
+        st.components.v1.html(giorno_html, height=70)
+
+        # Campo "Ora Orologio" con HTML personalizzato
+        st.subheader("Ora Orologio")
+        ora_orologio_html = f"""
+        <label for="timeInput" style="font-size: 16px; color: white;">Seleziona Ora:</label>
+        <input type="time" id="timeInput" value="{datetime.now().strftime('%H:%M')}" style="font-size: 18px; padding: 5px; background-color: black; color: white; border: 1px solid white; border-radius: 4px;">
+        """
+        st.components.v1.html(ora_orologio_html, height=70)
+
+        durata = st.number_input("Durata (minuti)", min_value=0, step=1)
+
+    with col2:
+        st.subheader("Fermi Dinamici")
+        if "fermi" not in st.session_state:
+            st.session_state.fermi = []
+
+        col3, col4 = st.columns(2)
+        with col3:
+            add_button = st.button("Aggiungi Fermo")
+        with col4:
+            remove_button = st.button("Rimuovi Fermo")
+
+        if add_button:
+            st.session_state.fermi.append("")
+        if remove_button and len(st.session_state.fermi) > 0:
+            st.session_state.fermi.pop()
+
+        for i in range(len(st.session_state.fermi)):
+            st.session_state.fermi[i] = st.text_input(f"Fermo {i+1}", value=st.session_state.fermi[i], key=f"fermo_{i}")
+
+    with st.form("complete_form"):
+        conferma = st.checkbox("Confermi che i dati inseriti sono corretti?")
+        submit_button = st.form_submit_button("Invia")
+
+    if submit_button:
+        if conferma:
+            df_new = pd.DataFrame([{
+                "Nome": nome,
+                "Età": età,
+                "Altezza (cm)": altezza,
+                "Descrizione": descrizione,
+                "Genere": genere,
+                "Hobby": " -- ".join(hobby),
+                "Soddisfazione": soddisfazione,
+                "Fermi": " -- ".join(st.session_state.fermi),
+                "Giorno": datetime.today().strftime('%d/%m/%Y'),
+                "Durata": durata,
+                "Ora Orologio": datetime.now().strftime('%H:%M')
+            }])
+
+            df_existing = load_data()
+            df_updated = pd.concat([df_existing, df_new], ignore_index=True)
+            save_data(df_updated)
+            st.success("Dati aggiunti con successo!")
+
+# Scheda 2: Modifica Dati
+with tabs[1]:
+    st.title("Modifica Dati")
+
+    df = load_data()
+    if df.empty:
+        st.warning("Non ci sono dati disponibili per la modifica.")
     else:
-        st.title("Analisi Statistica dei Dati")
+        st.write("Dati attualmente salvati:")
+        st.dataframe(df)
 
-        # DataFrame di lavoro
-        data = st.session_state.data
+        # Selezione della riga da modificare
+        row_index = st.number_input("Seleziona la riga da modificare (0 per la prima)", min_value=0, max_value=len(df)-1, step=1)
+        st.write("Riga selezionata:")
+        st.write(df.iloc[row_index])
 
-        # Calcolo delle statistiche
-        summary = data.describe(include='all').transpose()
-        summary['Missing Values'] = data.isnull().sum()
-        summary['Data Type'] = data.dtypes
-        summary['Unique Values'] = data.nunique()
+        with st.form("edit_form"):
+            nome = st.text_input("Nome", df.iloc[row_index]["Nome"])
+            età = st.number_input("Età", min_value=0, step=1, value=int(df.iloc[row_index]["Età"]))
+            altezza = st.number_input("Altezza (in cm)", min_value=0.0, step=0.1, value=float(df.iloc[row_index]["Altezza (cm)"]))
+            descrizione = st.text_area("Descrizione", df.iloc[row_index]["Descrizione"])
+            genere = st.selectbox("Genere", ["Maschio", "Femmina", "Altro"], index=["Maschio", "Femmina", "Altro"].index(df.iloc[row_index]["Genere"]))
+            hobby = st.text_area("Hobby (separati da --)", value=df.iloc[row_index]["Hobby"])
+            fermi = st.text_area("Fermi (separati da --)", value=df.iloc[row_index]["Fermi"] if "Fermi" in df.columns else "")
 
-        # Mostra tabella riassuntiva
-        st.write("Tabella Riassuntiva delle Statistiche per Colonna:")
-        st.dataframe(summary)
+            # Campo "Giorno"
+            giorno_val = pd.to_datetime(df.iloc[row_index]["Giorno"], errors="coerce")
+            if pd.isna(giorno_val):
+                giorno_val = datetime.today().date()
+            giorno = st.date_input("Giorno", value=giorno_val)
 
-        # Opzione per visualizzare ulteriori dettagli
-        col_name = st.selectbox("Seleziona una colonna per analisi dettagliata:", options=data.columns)
+            # Campo "Ora Orologio"
+            ora_corrente = df.iloc[row_index]["Ora Orologio"] if "Ora Orologio" in df.columns else "12:00"
+            ora_orologio = st.text_input("Ora Orologio (HH:MM)", value=ora_corrente)
 
-        if col_name:
-            st.write(f"Analisi dettagliata per la colonna: {col_name}")
+            # Gestione di "Durata"
+            durata_val = df.iloc[row_index]["Durata"] if "Durata" in df.columns else 0
+            if pd.isna(durata_val):
+                durata_val = 0
+            durata = st.number_input("Durata (minuti)", min_value=0, step=1, value=int(durata_val))
 
-            if data[col_name].dtype in ['float64', 'int64']:
-                st.write(f"Media: {data[col_name].mean()}")
-                st.write(f"Mediana: {data[col_name].median()}")
-                st.write(f"Deviazione Standard: {data[col_name].std()}")
-                st.write(f"Quartili: {data[col_name].quantile([0.25, 0.5, 0.75]).to_dict()}")
-            elif data[col_name].dtype == 'object':
-                st.write("Valori univoci:")
-                st.write(data[col_name].value_counts())
-            else:
-                st.write("Tipo di dato non supportato per analisi dettagliata.")
+            save_button = st.form_submit_button("Salva Modifiche")
+
+        if save_button:
+            df.at[row_index, "Nome"] = nome
+            df.at[row_index, "Età"] = età
+            df.at[row_index, "Altezza (cm)"] = altezza
+            df.at[row_index, "Descrizione"] = descrizione
+            df.at[row_index, "Genere"] = genere
+            df.at[row_index, "Hobby"] = hobby
+            df.at[row_index, "Fermi"] = fermi
+            df.at[row_index, "Giorno"] = giorno.strftime('%d/%m/%Y')
+            df.at[row_index, "Durata"] = durata
+            df.at[row_index, "Ora Orologio"] = ora_orologio
+
+            save_data(df)
+            st.success("Modifiche salvate con successo!")
+
+# Scheda 3: Scarica CSV
+with tabs[2]:
+    st.title("Scarica CSV")
+
+    df = load_data()
+    if df.empty:
+        st.warning("Non ci sono dati disponibili per il download.")
 
 
