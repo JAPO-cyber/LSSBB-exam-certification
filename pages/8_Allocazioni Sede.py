@@ -188,7 +188,7 @@ with tab2:
         if st.session_state.allocation_started:
             if not st.session_state.calculated:
                 if st.button("Calcola Allocazione"):
-                     st.session_state.road_data = calculate_scenario_values(st.session_state.road_data, st.session_state.province_data, st.session_state.config_data)
+                     st.session_state.road_data = calculate_scenario_values(st.session_state.road_data, st.session_state.province_data, st.session_state.sedi_data)
                      st.session_state.calculated = True
             if st.session_state.calculated:
                 st.write("### Tabella con Risultati")
