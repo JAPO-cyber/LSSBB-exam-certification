@@ -167,7 +167,7 @@ with tab1:
             st.dataframe(Province.head(10))
                                     
             # Salva i dati nella sessione
-            st.session_state.road_data = Road
+            st.session_state.road_data = Original_Road
             st.session_state.sedi_data = edited_sedi
             st.session_state.province_data = Province
             
