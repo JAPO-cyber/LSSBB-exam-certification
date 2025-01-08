@@ -7,8 +7,6 @@ import io
 
 def calculate_scenario_values(Original_Road, Province, Configurazione_sedi):
 
-    st.write("Colonne presenti in Original_Road:", Original_Road.columns)
-
     Original_Road["Provincia Partenza"]=Original_Road["Provincia_Partenza_Corretta"]
     Original_Road["Provincia Arrivo"]=Original_Road["Sede_arrivo_corretta"]
     Original_Road["Tipologia Servizio"]=Original_Road["Tipologia Contratto"]
@@ -167,10 +165,7 @@ with tab1:
             st.write("### File 3: Distanze Province")
             Province = pd.read_excel(file3, sheet_name='distanze revised')
             st.dataframe(Province.head(10))
-            
-            # Configurazione preliminare della tabella Road
-            Road = Original_Road[['Provincia Partenza', 'Provincia Arrivo', 'Tipologia Servizio']].copy()
-                        
+                                    
             # Salva i dati nella sessione
             st.session_state.road_data = Road
             st.session_state.sedi_data = edited_sedi
