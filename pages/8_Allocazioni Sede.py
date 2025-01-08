@@ -2,6 +2,124 @@ import streamlit as st
 import pandas as pd
 import io
 
+# Definizione del codice 
+# Configurazione dell'analisi
+
+def calculate_scenario_values(Original_Road, Province, Configurazione_sedi):
+
+    Original_Road["Provincia Partenza"]=Original_Road["Provincia_Partenza_Corretta"]
+    Original_Road["Provincia Arrivo"]=Original_Road["Sede_arrivo_corretta"]
+    Original_Road["Tipologia Servizio"]=Original_Road["Tipologia Contratto"]
+
+    # Scelgo sono le configurazioni univoche per la simulazione [la scelta di sviluppo è legata alla velocità del codice (30 secondi vs 30 minuti)]
+    Road= Original_Road[['Provincia Partenza', 'Provincia Arrivo','Tipologia Servizio']].copy()
+    #Road = Road[(Road["Provincia Partenza"]=='BG') & (Road["Provincia Arrivo"]=='VE') & (Road["Tipologia Servizio"]=="Rent")]
+    Road=Road.drop_duplicates()
+    Road.head(5)
+
+    Province['Path']=Province['Provincia Origine'].astype(str)+'-'+Province['Provincia Arrivo'].astype(str)
+
+    #Configuro il file di output
+    Road['Path_originale']=Road['Provincia Partenza'].astype(str)+'-'+Road['Provincia Arrivo'].astype(str)
+    Road['Distanza Baseline']=None
+    Road['Tempo Baseline']=None
+
+    # Configuro i vari scenari
+    for colonna in Configurazione_sedi.columns[1:]:
+        nome_colonna=colonna
+        # Creo le colonne per il calcolo dello scenario
+        colonna1=colonna+'- Distanza Km'
+        colonna2=colonna+'- Tempo '
+        colonna3=colonna+'- Sede Riferimento'
+        Road[colonna1]=None
+        Road[colonna2]=None
+        Road[colonna3]=None
+
+
+    for index,row in Road.iterrows():
+        # Percorso originale partenza- arrivo
+        valore_cercato=row['Path_originale']
+        if valore_cercato in Province['Path'].values:
+            Road.at[index,'Distanza Baseline']=Province.loc[Province['Path']==valore_cercato,'Distanza km'].values[0]
+            Road.at[index,'Tempo Baseline']=Province.loc[Province['Path']==valore_cercato,'Durata minuti'].values[0]
+        else:
+            Road.at[index,'Distanza Baseline']= None
+            Road.at[index,'Tempo Baseline']=None
+        
+        # Configuro i dati di gestione
+        arrivo=row['Provincia Arrivo']
+        tipo_servizio=row['Tipologia Servizio']
+
+
+        # Calcolo i valori dello scenario di riferimento
+        for colonna in Configurazione_sedi.columns[1:]:
+            nome_colonna=colonna
+            # Definisco le colonne di salvataggio
+            colonna1=colonna+'- Distanza Km'
+            colonna2=colonna+'- Tempo '
+            colonna3=colonna+'- Sede Riferimento'
+            # Definisco il dataframe per la gestione della colonna
+            colonna_dataframe=pd.DataFrame(columns=['sede','tipo sede','km','tempo'])
+
+            #Utilizzo solo le colonne non nulle
+            non_null_count=Configurazione_sedi[colonna].count()
+
+            try:
+                # Vincolo sulla partenza
+                if non_null_count>0:
+                    #Creo la lista di calcolo
+                    for index_1,row_1 in Configurazione_sedi.iterrows():
+                        value=row_1[colonna] #Recupero la lettera della sede
+                        try:
+                            valore_corrispondente=row_1[Configurazione_sedi.columns[0]] #Recupero ad esempio Bergamo
+                            concatenato=valore_corrispondente+'-'+arrivo # Crea la nuova coppia
+                        except:
+                            concatenato='errore'
+                            
+                        if concatenato in Province['Path'].values:
+                            # Trovo il valore corrispondente nella tabella
+                            colonna_dataframe.at[index_1,'sede']=valore_corrispondente
+                            colonna_dataframe.at[index_1,'tipo sede']=value
+                            try:
+                                colonna_dataframe.at[index_1,'km']=Province.loc[Province['Path']==concatenato,'Distanza km'].values[0]
+                                colonna_dataframe.at[index_1,'tempo']=Province.loc[Province['Path']==concatenato,'Durata minuti'].values[0]
+                            except:
+                                colonna_dataframe.at[index_1,'km']=0
+                                colonna_dataframe.at[index_1,'tempo']=0
+
+                    # Filtro il dataframe per delle condizioni sfruttando un case when
+                    if tipo_servizio=='Trade':
+                        #filtro il dataframe con la condizione A
+                        colonna_dataframe_filtered=colonna_dataframe[colonna_dataframe['tipo sede']=='A']
+                        try:
+                            min_km_row=colonna_dataframe_filtered.loc[colonna_dataframe_filtered['km'].idxmin()]
+                            Road.at[index,colonna3]=min_km_row['sede']
+                            Road.at[index,colonna1]=min_km_row['km']
+                            Road.at[index,colonna2]=min_km_row['tempo']
+                        except ValueError as e:
+                            e=1
+                            #print(arrivo)
+
+                    else:    
+                        colonna_dataframe_filtered=colonna_dataframe[(colonna_dataframe['tipo sede']=='A') | (colonna_dataframe['tipo sede']=='B')]
+                        try:
+                            print(colonna_dataframe_filtered)
+                            min_km_row=colonna_dataframe_filtered.loc[colonna_dataframe_filtered['km'].idxmin()]
+                            Road.at[index,colonna3]=min_km_row['sede']
+                            Road.at[index,colonna1]=min_km_row['km']
+                            Road.at[index,colonna2]=min_km_row['tempo']
+                            print(min_km_row['sede'])
+                        except ValueError as e:
+                            e=1
+                            #print(e)
+                            #print(arrivo)
+            except ValueError as e:
+                print(e)       
+    
+    return Road
+
+
+
 # Configurazione della pagina
 st.set_page_config(page_title="Analisi Logistica", layout="wide")
 
@@ -36,9 +154,6 @@ with tab1:
             # File 1: GS_KAR_DB_Completo.xlsx
             st.write("### File 1: GS_KAR_DB_Completo")
             Original_Road = pd.read_excel(file1, sheet_name='Foglio1')
-            Original_Road["Provincia Partenza"] = Original_Road["Provincia_Partenza_Corretta"]
-            Original_Road["Provincia Arrivo"] = Original_Road["Sede_arrivo_corretta"]
-            Original_Road["Tipologia Servizio"] = Original_Road["Tipologia Contratto"]
             st.dataframe(Original_Road.head(10))
             
             # File 2: Configurazione_sedi.xlsx
@@ -49,25 +164,11 @@ with tab1:
             # File 3: Distanze_province.xlsx
             st.write("### File 3: Distanze Province")
             Province = pd.read_excel(file3, sheet_name='distanze revised')
-            Province['Path'] = Province['Provincia Origine'].astype(str) + '-' + Province['Provincia Arrivo'].astype(str)
             st.dataframe(Province.head(10))
             
             # Configurazione preliminare della tabella Road
             Road = Original_Road[['Provincia Partenza', 'Provincia Arrivo', 'Tipologia Servizio']].copy()
-            Road = Road.drop_duplicates()
-            Road['Path_originale'] = Road['Provincia Partenza'].astype(str) + '-' + Road['Provincia Arrivo'].astype(str)
-            Road['Distanza Baseline'] = None
-            Road['Tempo Baseline'] = None
-            
-            # Aggiunta colonne per scenari
-            for colonna in edited_sedi.columns[1:]:
-                colonna1 = colonna + '- Distanza Km'
-                colonna2 = colonna + '- Tempo '
-                colonna3 = colonna + '- Sede Riferimento'
-                Road[colonna1] = None
-                Road[colonna2] = None
-                Road[colonna3] = None
-            
+                        
             # Salva i dati nella sessione
             st.session_state.road_data = Road
             st.session_state.sedi_data = edited_sedi
@@ -90,41 +191,8 @@ with tab2:
         if st.session_state.allocation_started:
             if not st.session_state.calculated:
                 if st.button("Calcola Allocazione"):
-                    # Funzione di calcolo
-                    def calcola_allocazione(Road, Province, Configurazione_sedi):
-                        for colonna in Configurazione_sedi.columns[1:]:
-                            colonna1 = colonna + '- Distanza Km'
-                            colonna2 = colonna + '- Tempo '
-                            colonna3 = colonna + '- Sede Riferimento'
-
-                            for index, row in Road.iterrows():
-                                arrivo = row['Provincia Arrivo']
-                                tipo_servizio = row['Tipologia Servizio']
-                                
-                                # Trova le combinazioni di percorso
-                                filtered_province = Province[Province['Provincia Arrivo'] == arrivo]
-                                
-                                if not filtered_province.empty:
-                                    try:
-                                        min_km_row = filtered_province.loc[filtered_province['Distanza km'].idxmin()]
-                                        Road.at[index, colonna1] = min_km_row['Distanza km']
-                                        Road.at[index, colonna2] = min_km_row['Durata minuti']
-                                        Road.at[index, colonna3] = min_km_row['Provincia Origine']
-                                    except ValueError:
-                                        st.warning(f"Errore nell'allocazione per {arrivo}")
-                        return Road
-
-                    # Esegui il calcolo
-                    with st.spinner("Calcolo in corso..."):
-                        Road = calcola_allocazione(
-                            st.session_state.road_data,
-                            st.session_state.province_data,
-                            st.session_state.sedi_data,
-                        )
-                        st.session_state.road_data = Road
-                        st.session_state.calculated = True
-                        st.success("Calcolo completato!")
-
+                     st.session_state.road_data = calculate_scenario_values(st.session_state.road_data, st.session_state.province_data, st.session_state.config_data)
+                     st.session_state.calculated = True
             if st.session_state.calculated:
                 st.write("### Tabella con Risultati")
                 st.dataframe(st.session_state.road_data.head(10))
