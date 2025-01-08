@@ -115,8 +115,13 @@ def calculate_scenario_values(Original_Road, Province, Configurazione_sedi):
                             #print(arrivo)
             except ValueError as e:
                 print(e)       
+
+    Road_filtered = Road[
+    (Road["Provincia Partenza"].notna()) & (Road["Provincia Partenza"] != "") & (Road["Provincia Partenza"] != 0) &
+    (Road["Provincia Arrivo"].notna()) & (Road["Provincia Arrivo"] != "") & (Road["Provincia Arrivo"] != 0) &
+    (Road["Distanza Baseline"].notna()) & (Road["Distanza Baseline"] != "") & (Road["Distanza Baseline"] != 0) ]
     
-    return Road
+    return Road_filtered
 
 
 
