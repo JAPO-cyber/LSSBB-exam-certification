@@ -65,7 +65,7 @@ with tab1:
 
 # Tab 2: Analisi Statistica
 with tab2:
-    if not st.session_state.data:
+    if st.session_state.data is None or len(st.session_state.data) == 0:
         st.warning("Carica prima un file nella tab 'Carica File'.")
     else:
         st.title("Analisi Statistica dei Dati")
@@ -99,3 +99,4 @@ with tab2:
                 st.write(data[col_name].value_counts())
             else:
                 st.write("Tipo di dato non supportato per analisi dettagliata.")
+
