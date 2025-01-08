@@ -134,7 +134,6 @@ with tab2:
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 st.session_state.road_data.to_excel(writer, index=False, sheet_name='Risultati')
-                writer.save()
             st.download_button(
                 label="Scarica Risultati in Excel",
                 data=output.getvalue(),
@@ -143,5 +142,6 @@ with tab2:
             )
     else:
         st.warning("Carica i file nella prima tab e premi il pulsante di calcolo.")
+
 
 
