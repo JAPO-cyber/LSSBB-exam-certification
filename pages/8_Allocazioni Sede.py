@@ -7,8 +7,7 @@ import io
 
 def calculate_scenario_values(Original_Road, Province, Configurazione_sedi):
 
-    if "Provincia_Partenza_Corretta" not in Original_Road.columns:
-        st.error("La colonna 'Provincia_Partenza_Corretta' non è presente nel file caricato.")
+    st.write("Colonne presenti in Original_Road:", Original_Road.columns)
 
     Original_Road["Provincia Partenza"]=Original_Road["Provincia_Partenza_Corretta"]
     Original_Road["Provincia Arrivo"]=Original_Road["Sede_arrivo_corretta"]
