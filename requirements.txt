@@ -9,4 +9,4 @@ ortools
 openpyxl
 matplotlib
 xlsxwriter
-sklearn
+scikit-learn
