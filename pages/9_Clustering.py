@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
+from kmodes.kprototypes import KPrototypes
+import numpy as np
 import matplotlib.pyplot as plt
 
 # Dati per il DataFrame
@@ -37,34 +38,35 @@ df = pd.DataFrame(data)
 # Selezione delle colonne da utilizzare per il clustering
 st.sidebar.header("Seleziona colonne per il clustering")
 numerical_columns = ["Capacità (Ton)", "Altezza Massima (m)", "Consumo (kWh/Litri/h)", "Peso (Kg)", "Ore Lavoro", "Costo Manutenzione (€)"]
-selected_columns = st.sidebar.multiselect("Scegli colonne", numerical_columns, default=numerical_columns)
+categorical_columns = ["Tipologia Muletto", "Tipo Alimentazione", "Stato"]
+selected_numerical = st.sidebar.multiselect("Scegli colonne numeriche", numerical_columns, default=numerical_columns)
+selected_categorical = st.sidebar.multiselect("Scegli colonne categoriche", categorical_columns, default=categorical_columns)
 
-if selected_columns:
-    # Preprocessing per il clustering
+if selected_numerical or selected_categorical:
+    selected_columns = selected_numerical + selected_categorical
     data_for_clustering = df[selected_columns]
 
-    # Applicazione del clustering gerarchico
-    linkage_matrix = linkage(data_for_clustering, method="ward")
-    df["Cluster"] = fcluster(linkage_matrix, t=3, criterion="maxclust")
+    # Conversione dei dati in array NumPy
+    data_array = data_for_clustering.to_numpy()
+
+    # Identificazione degli indici delle colonne categoriche
+    categorical_indices = [data_for_clustering.columns.get_loc(col) for col in selected_categorical]
+
+    # Applicazione del clustering K-Prototypes
+    kproto = KPrototypes(n_clusters=3, random_state=42)
+    clusters = kproto.fit_predict(data_array, categorical=categorical_indices)
+    df["Cluster"] = clusters
 
     # Titolo nell'app Streamlit
-    st.title("Tabella Informazioni Muletti con Clustering Gerarchico")
+    st.title("Tabella Informazioni Muletti con Clustering K-Prototypes")
 
     # Mostra il DataFrame nella pagina Streamlit
     st.dataframe(df)
 
-    # Visualizzazione del dendrogramma
-    st.subheader("Dendrogramma del Clustering")
-    fig, ax = plt.subplots(figsize=(10, 5))
-    dendrogram(linkage_matrix, labels=df["Tipologia Muletto"].values, ax=ax)
-    ax.set_title("Dendrogramma del Clustering")
-    ax.set_ylabel("Distanza")
-    st.pyplot(fig)
-
     # Visualizzazione dei cluster
-    if len(selected_columns) >= 2:
+    if len(selected_numerical) >= 2:
         st.subheader("Visualizzazione dei Cluster")
-        x_col, y_col = selected_columns[:2]
+        x_col, y_col = selected_numerical[:2]
         fig, ax = plt.subplots()
         scatter = ax.scatter(
             df[x_col], df[y_col], c=df["Cluster"], cmap="viridis"
@@ -74,6 +76,6 @@ if selected_columns:
         plt.colorbar(scatter, label="Cluster")
         st.pyplot(fig)
     else:
-        st.write("Seleziona almeno due colonne per visualizzare i cluster.")
+        st.write("Seleziona almeno due colonne numeriche per visualizzare i cluster.")
 else:
     st.write("Seleziona almeno una colonna per iniziare il clustering.")
