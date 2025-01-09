@@ -19,7 +19,7 @@ if not api_key:
 else:
     # Tabs per gli esempi
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs([
-        "Calcolo Spese di Spedizione",
+        "Distanza",
         "Ottimizzazione Percorsi",
         "Monitoraggio Tempo Reale",
         "Luoghi di Ritiro Vicini",
@@ -33,7 +33,7 @@ else:
 
     # Tab 1: Calcolo spese di spedizione
     with tab1:
-        st.header("Calcolo Spese di Spedizione")
+        st.header("Calcolo Distanza")
         origin = st.text_input("Indirizzo di partenza", "Via Roma, Milano")
         destination = st.text_input("Indirizzo di destinazione", "Piazza Duomo, Firenze")
 
