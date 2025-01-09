@@ -82,6 +82,8 @@ if selected_numerical or selected_categorical:
         scatter = ax.scatter(
             df[x_col], df[y_col], c=df["Cluster"], cmap="viridis"
         )
+        for i, txt in enumerate(df["Tipologia Muletto"]):
+            ax.annotate(txt, (df[x_col].iloc[i], df[y_col].iloc[i]))
         ax.set_xlabel(x_col)
         ax.set_ylabel(y_col)
         plt.colorbar(scatter, label="Cluster")
