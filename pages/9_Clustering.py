@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from sklearn.cluster import KMeans
+from scikit-learn.cluster import KMeans
 import matplotlib.pyplot as plt
 
 # Dati per il DataFrame
