@@ -3,6 +3,7 @@ import pandas as pd
 from kmodes.kprototypes import KPrototypes
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.cluster.hierarchy import linkage, dendrogram
 
 # Dati per il DataFrame
 data = {
@@ -63,6 +64,16 @@ if selected_numerical or selected_categorical:
     # Mostra il DataFrame nella pagina Streamlit
     st.dataframe(df)
 
+    # Visualizzazione del dendrogramma
+    st.subheader("Dendrogramma del Clustering (Numerico)")
+    if len(selected_numerical) >= 2:
+        linkage_matrix = linkage(data_for_clustering[selected_numerical], method="ward")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        dendrogram(linkage_matrix, labels=df["Tipologia Muletto"].values, ax=ax)
+        ax.set_title("Dendrogramma del Clustering (Numerico)")
+        ax.set_ylabel("Distanza")
+        st.pyplot(fig)
+
     # Visualizzazione dei cluster
     if len(selected_numerical) >= 2:
         st.subheader("Visualizzazione dei Cluster")
@@ -79,3 +90,4 @@ if selected_numerical or selected_categorical:
         st.write("Seleziona almeno due colonne numeriche per visualizzare i cluster.")
 else:
     st.write("Seleziona almeno una colonna per iniziare il clustering.")
+
