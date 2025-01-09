@@ -10,3 +10,4 @@ openpyxl
 matplotlib
 xlsxwriter
 scipy
+kmodes
