@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from scikit-learn.cluster import KMeans
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 import matplotlib.pyplot as plt
 
 # Dati per il DataFrame
@@ -43,19 +43,27 @@ if selected_columns:
     # Preprocessing per il clustering
     data_for_clustering = df[selected_columns]
 
-    # Applicazione del modello di clustering
-    kmeans = KMeans(n_clusters=3, random_state=42)
-    df["Cluster"] = kmeans.fit_predict(data_for_clustering)
+    # Applicazione del clustering gerarchico
+    linkage_matrix = linkage(data_for_clustering, method="ward")
+    df["Cluster"] = fcluster(linkage_matrix, t=3, criterion="maxclust")
 
     # Titolo nell'app Streamlit
-    st.title("Tabella Informazioni Muletti con Clustering")
+    st.title("Tabella Informazioni Muletti con Clustering Gerarchico")
 
     # Mostra il DataFrame nella pagina Streamlit
     st.dataframe(df)
 
+    # Visualizzazione del dendrogramma
+    st.subheader("Dendrogramma del Clustering")
+    fig, ax = plt.subplots(figsize=(10, 5))
+    dendrogram(linkage_matrix, labels=df["Tipologia Muletto"].values, ax=ax)
+    ax.set_title("Dendrogramma del Clustering")
+    ax.set_ylabel("Distanza")
+    st.pyplot(fig)
+
     # Visualizzazione dei cluster
-    st.subheader("Visualizzazione dei Cluster")
     if len(selected_columns) >= 2:
+        st.subheader("Visualizzazione dei Cluster")
         x_col, y_col = selected_columns[:2]
         fig, ax = plt.subplots()
         scatter = ax.scatter(
