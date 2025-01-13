@@ -10,7 +10,7 @@ def load_light_model():
 
 # Inizializza l'app Streamlit
 st.title("Streamlit App con Modello Leggero (Hugging Face)")
-st.write("Inserisci un prompt e ottieni una risposta generata da `distilgpt2`.")
+st.write("Inserisci un prompt e ottieni una risposta generata dal modello `distilgpt2`.")
 
 # Carica modello e tokenizer
 tokenizer, model = load_light_model()
@@ -21,15 +21,25 @@ user_input = st.text_area("Inserisci il tuo prompt:", placeholder="Scrivi qualco
 # Generazione di testo
 if st.button("Genera"):
     if user_input.strip():
-        # Tokenizza il prompt
-        inputs = tokenizer(user_input, return_tensors="pt")
-        
-        # Genera la risposta
-        outputs = model.generate(inputs["input_ids"], max_length=50, num_return_sequences=1)
-        
-        # Decodifica e mostra il risultato
-        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        st.subheader("Risultato Generato:")
-        st.write(response)
+        try:
+            # Tokenizza il prompt
+            inputs = tokenizer(user_input, return_tensors="pt", padding=True, truncation=True)
+
+            # Genera la risposta
+            outputs = model.generate(
+                inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],  # Aggiungi la maschera di attenzione
+                pad_token_id=tokenizer.eos_token_id,  # Imposta esplicitamente il token di padding
+                max_length=50,  # Limita la lunghezza massima della risposta
+                num_return_sequences=1
+            )
+
+            # Decodifica e mostra il risultato
+            response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            st.subheader("Risultato Generato:")
+            st.write(response)
+
+        except Exception as e:
+            st.error(f"Errore durante la generazione: {e}")
     else:
-        st.warning("Per favore, inserisci un prompt prima di generare la risposta!")
+        st.warning("Per favore, inserisci un prompt valido prima di generare la risposta!")
