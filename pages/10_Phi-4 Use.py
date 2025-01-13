@@ -5,7 +5,14 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 @st.cache_resource
 def load_light_model():
     tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
+
+    # Aggiungi un token di padding se non esiste
+    if tokenizer.pad_token is None:
+        tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
+
     model = AutoModelForCausalLM.from_pretrained("distilgpt2")
+    model.resize_token_embeddings(len(tokenizer))  # Aggiorna la dimensione dell'embedding
+
     return tokenizer, model
 
 # Inizializza l'app Streamlit
@@ -29,7 +36,7 @@ if st.button("Genera"):
             outputs = model.generate(
                 inputs["input_ids"],
                 attention_mask=inputs["attention_mask"],  # Aggiungi la maschera di attenzione
-                pad_token_id=tokenizer.eos_token_id,  # Imposta esplicitamente il token di padding
+                pad_token_id=tokenizer.pad_token_id,  # Imposta esplicitamente il token di padding
                 max_length=50,  # Limita la lunghezza massima della risposta
                 num_return_sequences=1
             )
