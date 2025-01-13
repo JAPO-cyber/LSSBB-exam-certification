@@ -11,3 +11,5 @@ matplotlib
 xlsxwriter
 scipy
 kmodes
+transformers
+torch
