@@ -34,23 +34,21 @@ if st.button("Genera"):
 
             # Genera la risposta
             outputs = model.generate(
-                inputs["input_ids"],
-                attention_mask=inputs.get("attention_mask"),  # Usa la maschera di attenzione se esiste
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],  # Usa la maschera di attenzione
                 pad_token_id=tokenizer.pad_token_id,  # Imposta esplicitamente il token di padding
                 max_length=50,  # Limita la lunghezza massima della risposta
                 num_return_sequences=1
             )
 
             # Decodifica e mostra il risultato
-            if outputs:
-                response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-                st.subheader("Risultato Generato:")
-                st.write(response)
-            else:
-                st.warning("Nessuna risposta generata. Prova a modificare il tuo prompt.")
+            response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            st.subheader("Risultato Generato:")
+            st.write(response)
 
         except Exception as e:
             st.error(f"Errore durante la generazione: {e}")
     else:
         st.warning("Per favore, inserisci un prompt valido prima di generare la risposta!")
+
 
